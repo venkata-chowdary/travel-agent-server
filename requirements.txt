@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0,<3.0
+asyncpg
+bcrypt
+PyJWT
+python-dotenv
+email-validator
+pytest
+pytest-asyncio

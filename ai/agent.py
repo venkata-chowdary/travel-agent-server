@@ -11,15 +11,20 @@ from uuid import UUID
 try:
     from ai.schemas import BudgetBreakdown, TravelAgentStructuredResponse, WeatherNotes
     from ai.service import fetch_user_preferences
+    from ai.prompts import TRAVEL_AGENT_SYSTEM_PROMPT
     from tools.weather_tool import get_current_date, get_current_weather
+    from app.tools.flight_tools import search_flights
 except ModuleNotFoundError:
     # Allow running this module directly from `server/ai` during local debugging.
     from pathlib import Path
 
     sys.path.append(str(Path(__file__).resolve().parents[1]))
+    sys.path.append(str(Path(__file__).resolve().parents[2]))
     from schemas import BudgetBreakdown, TravelAgentStructuredResponse, WeatherNotes
     from service import fetch_user_preferences
+    from prompts import TRAVEL_AGENT_SYSTEM_PROMPT
     from tools.weather_tool import get_current_date, get_current_weather
+    from app.tools.flight_tools import search_flights
 
 load_dotenv()
 sys.stdout.reconfigure(encoding="utf-8")
@@ -28,26 +33,8 @@ llm = ChatGoogleGenerativeAI(
     model="gemini-3-flash-preview",
     temperature=0,
 )
-tools = [get_current_date, get_current_weather]
+tools = [get_current_date, get_current_weather, search_flights]
 llm_with_tools = llm.bind_tools(tools)
-
-TRAVEL_AGENT_SYSTEM_PROMPT = """
-You are a helpful travel planning assistant.
-
-Your goals:
-- Ask concise clarifying questions when details are missing.
-- Provide practical, budget-aware travel plans.
-- Recommend flights, hotels, local transport, and key activities.
-- Share visa/safety/weather notes as general guidance.
-
-Rules:
-- Be concise, structured, and action-oriented.
-- If user budget/timeline is unclear, ask for it first.
-- Never present guesses as confirmed facts.
-- If unsure, say so and suggest how to verify.
-""".strip()
-
-
 
 class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]

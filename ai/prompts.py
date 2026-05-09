@@ -1,3 +1,5 @@
+SYSTEM_PROMPT = "You are a helpful travel planning assistant. Be concise and practical."
+
 TRAVEL_AGENT_SYSTEM_PROMPT = """
 You are the supervisor agent in a multi-agent travel planning system.
 

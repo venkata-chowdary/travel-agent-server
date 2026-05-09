@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from ai.agent import run_travel_agent
@@ -15,8 +15,6 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(body: ChatRequest, request: Request) -> ChatResponse:
-    user = getattr(request.state, "user", None)
-    user_id = str(user.id) if user else None
-    reply = await run_travel_agent(user_id, body.message)
+async def chat(body: ChatRequest) -> ChatResponse:
+    reply = await run_travel_agent(body.message)
     return ChatResponse(reply=reply)

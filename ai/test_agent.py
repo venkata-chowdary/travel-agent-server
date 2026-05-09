@@ -1,22 +1,28 @@
 import asyncio
+import logging
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="  [%(name)s] %(message)s",
+    stream=sys.stdout,
+)
+
 from ai.agent import run_travel_agent
 
 
 async def main():
-    print("=== Travel Agent Test ===\n")
+    print("=== Weather Tool Binding Test ===\n")
 
-    test_messages = [
-        "Plan a 3-day trip to Paris for 2 people.",
-        "What should I pack for a beach trip to Goa in July?",
-        "Give me a budget breakdown for a week in Tokyo.",
+    test_cases = [
+        ("City only", "What is the current weather in Hyderabad?"),
     ]
 
-    for msg in test_messages:
+    for label, msg in test_cases:
+        print(f"[{label}]")
         print(f"User: {msg}")
         reply = await run_travel_agent(msg)
         print(f"Agent: {reply}\n{'-' * 60}\n")

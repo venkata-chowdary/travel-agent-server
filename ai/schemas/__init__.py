@@ -1,3 +1,5 @@
+from .flight import FlightOption, FlightSearchResult
+from .preferences import PreferenceContext, TravelPreferences
 from .travel import (
     BudgetBreakdown,
     ItineraryDay,
@@ -5,7 +7,6 @@ from .travel import (
     TravelAgentStructuredResponse,
     WeatherNotes,
 )
-from .flight import FlightOption, FlightSearchResult
 
 __all__ = [
     "BudgetBreakdown",
@@ -14,5 +15,7 @@ __all__ = [
     "ItineraryDay",
     "ItineraryItem",
     "TravelAgentStructuredResponse",
+    "PreferenceContext",
+    "TravelPreferences",
     "WeatherNotes",
 ]

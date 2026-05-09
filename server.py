@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,6 +10,12 @@ from config import settings
 from db import close_db, init_db
 from mock_apis.routes import router as mock_router
 from routes.agent import router as agent_router
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(message)s",
+)
 
 
 @asynccontextmanager

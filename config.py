@@ -24,6 +24,17 @@ def _require_env(name: str, *fallback_names: str) -> str:
     raise RuntimeError(f"Missing required environment variable {name}.")
 
 
+def _get_non_negative_float(name: str, default: float) -> float:
+    raw_value = os.getenv(name, str(default)).strip()
+    try:
+        parsed_value = float(raw_value)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be a number.") from exc
+    if parsed_value < 0:
+        raise RuntimeError(f"{name} must be >= 0.")
+    return parsed_value
+
+
 def _get_positive_int(name: str, default: int, minimum: int) -> int:
     raw_value = os.getenv(name, str(default)).strip()
 
@@ -57,6 +68,8 @@ class Settings:
     jwt_expire_days: int
     bcrypt_rounds: int
     cors_origins: list[str]
+    llm_model: str
+    llm_temperature: float
 
 
 def load_settings() -> Settings:
@@ -67,6 +80,8 @@ def load_settings() -> Settings:
         jwt_expire_days=_get_positive_int("JWT_EXPIRE_DAYS", default=7, minimum=1),
         bcrypt_rounds=_get_positive_int("BCRYPT_ROUNDS", default=12, minimum=12),
         cors_origins=_split_csv(os.getenv("CORS_ORIGINS", "http://localhost:3000")),
+        llm_model=os.getenv("LLM_MODEL", "gemini-2.0-flash").strip() or "gemini-2.0-flash",
+        llm_temperature=_get_non_negative_float("LLM_TEMPERATURE", default=0.0),
     )
 
 

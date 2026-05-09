@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from ai.schemas import TravelPreferences
+
 
 def _normalize_email(value: EmailStr) -> str:
     return value.strip().lower()
@@ -80,12 +82,12 @@ class UserResponse(BaseModel):
     email: EmailStr
     name: str
     created_at: datetime
-    preferences: dict = Field(default_factory=dict)
+    preferences: TravelPreferences = Field(default_factory=TravelPreferences)
     has_seen_preferences_dialog: bool = False
 
 
 class PreferencesUpdateRequest(BaseModel):
-    preferences: dict | None = None
+    preferences: TravelPreferences | None = None
     has_seen_preferences_dialog: bool | None = None
 
 

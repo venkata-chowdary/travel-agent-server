@@ -1,0 +1,1785 @@
+[
+  {
+    "id": "trn_001",
+    "provider": "MockRail",
+    "train_name": "Konark Express",
+    "train_number": "11020",
+    "source": "HYD",
+    "destination": "GOI",
+    "departure_hour": "17:20",
+    "arrival_hour": "07:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 850,
+    "status": "scheduled",
+    "rating": 3.8,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 430,
+        "available_seats": 180
+      },
+      {
+        "class_type": "3ac",
+        "price": 1050,
+        "available_seats": 60
+      },
+      {
+        "class_type": "2ac",
+        "price": 1520,
+        "available_seats": 28
+      }
+    ]
+  },
+  {
+    "id": "trn_002",
+    "provider": "MockRail",
+    "train_name": "Vasco Da Gama Express",
+    "train_number": "07302",
+    "source": "HYD",
+    "destination": "GOI",
+    "departure_hour": "22:00",
+    "arrival_hour": "12:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 870,
+    "status": "scheduled",
+    "rating": 3.6,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 380,
+        "available_seats": 220
+      },
+      {
+        "class_type": "3ac",
+        "price": 980,
+        "available_seats": 72
+      },
+      {
+        "class_type": "2ac",
+        "price": 1420,
+        "available_seats": 36
+      }
+    ]
+  },
+  {
+    "id": "trn_003",
+    "provider": "MockRail",
+    "train_name": "Goa Express",
+    "train_number": "12779",
+    "source": "HYD",
+    "destination": "GOI",
+    "departure_hour": "14:30",
+    "arrival_hour": "05:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 870,
+    "status": "scheduled",
+    "rating": 3.9,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 410,
+        "available_seats": 160
+      },
+      {
+        "class_type": "3ac",
+        "price": 1020,
+        "available_seats": 48
+      },
+      {
+        "class_type": "2ac",
+        "price": 1480,
+        "available_seats": 24
+      }
+    ]
+  },
+  {
+    "id": "trn_004",
+    "provider": "MockRail",
+    "train_name": "Rajkot Express",
+    "train_number": "16735",
+    "source": "HYD",
+    "destination": "GOI",
+    "departure_hour": "07:45",
+    "arrival_hour": "22:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 855,
+    "status": "delayed",
+    "rating": 3.5,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 350,
+        "available_seats": 240
+      },
+      {
+        "class_type": "3ac",
+        "price": 920,
+        "available_seats": 84
+      }
+    ]
+  },
+  {
+    "id": "trn_005",
+    "provider": "MockRail",
+    "train_name": "Rajdhani Express",
+    "train_number": "12429",
+    "source": "HYD",
+    "destination": "BLR",
+    "departure_hour": "06:55",
+    "arrival_hour": "17:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 605,
+    "status": "scheduled",
+    "rating": 4.4,
+    "class_options": [
+      {
+        "class_type": "3ac",
+        "price": 1380,
+        "available_seats": 52
+      },
+      {
+        "class_type": "2ac",
+        "price": 1920,
+        "available_seats": 24
+      }
+    ]
+  },
+  {
+    "id": "trn_006",
+    "provider": "MockRail",
+    "train_name": "Kacheguda Express",
+    "train_number": "12762",
+    "source": "HYD",
+    "destination": "BLR",
+    "departure_hour": "20:30",
+    "arrival_hour": "07:15",
+    "arrival_day_offset": 1,
+    "duration_minutes": 645,
+    "status": "scheduled",
+    "rating": 3.9,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 280,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 820,
+        "available_seats": 64
+      },
+      {
+        "class_type": "2ac",
+        "price": 1180,
+        "available_seats": 32
+      }
+    ]
+  },
+  {
+    "id": "trn_007",
+    "provider": "MockRail",
+    "train_name": "Hampi Express",
+    "train_number": "16591",
+    "source": "HYD",
+    "destination": "BLR",
+    "departure_hour": "22:00",
+    "arrival_hour": "08:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 630,
+    "status": "scheduled",
+    "rating": 3.7,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 255,
+        "available_seats": 260
+      },
+      {
+        "class_type": "3ac",
+        "price": 780,
+        "available_seats": 80
+      },
+      {
+        "class_type": "2ac",
+        "price": 1120,
+        "available_seats": 40
+      }
+    ]
+  },
+  {
+    "id": "trn_008",
+    "provider": "MockRail",
+    "train_name": "Intercity Express",
+    "train_number": "07092",
+    "source": "HYD",
+    "destination": "BLR",
+    "departure_hour": "06:00",
+    "arrival_hour": "15:45",
+    "arrival_day_offset": 0,
+    "duration_minutes": 585,
+    "status": "scheduled",
+    "rating": 4.0,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 320,
+        "available_seats": 120
+      },
+      {
+        "class_type": "3ac",
+        "price": 720,
+        "available_seats": 56
+      }
+    ]
+  },
+  {
+    "id": "trn_009",
+    "provider": "MockRail",
+    "train_name": "Garib Rath Express",
+    "train_number": "12731",
+    "source": "HYD",
+    "destination": "BLR",
+    "departure_hour": "15:00",
+    "arrival_hour": "01:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 630,
+    "status": "scheduled",
+    "rating": 3.8,
+    "class_options": [
+      {
+        "class_type": "3ac",
+        "price": 650,
+        "available_seats": 110
+      }
+    ]
+  },
+  {
+    "id": "trn_010",
+    "provider": "MockRail",
+    "train_name": "Falaknuma Express",
+    "train_number": "12704",
+    "source": "HYD",
+    "destination": "MAA",
+    "departure_hour": "06:00",
+    "arrival_hour": "18:45",
+    "arrival_day_offset": 0,
+    "duration_minutes": 765,
+    "status": "scheduled",
+    "rating": 3.9,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 310,
+        "available_seats": 180
+      },
+      {
+        "class_type": "3ac",
+        "price": 870,
+        "available_seats": 60
+      },
+      {
+        "class_type": "2ac",
+        "price": 1250,
+        "available_seats": 28
+      }
+    ]
+  },
+  {
+    "id": "trn_011",
+    "provider": "MockRail",
+    "train_name": "Charminar Express",
+    "train_number": "12759",
+    "source": "HYD",
+    "destination": "MAA",
+    "departure_hour": "18:00",
+    "arrival_hour": "06:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 750,
+    "status": "scheduled",
+    "rating": 4.1,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 295,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 840,
+        "available_seats": 72
+      },
+      {
+        "class_type": "2ac",
+        "price": 1210,
+        "available_seats": 36
+      }
+    ]
+  },
+  {
+    "id": "trn_012",
+    "provider": "MockRail",
+    "train_name": "Golconda Express",
+    "train_number": "12757",
+    "source": "HYD",
+    "destination": "MAA",
+    "departure_hour": "22:30",
+    "arrival_hour": "12:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 810,
+    "status": "delayed",
+    "rating": 3.6,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 270,
+        "available_seats": 240
+      },
+      {
+        "class_type": "3ac",
+        "price": 790,
+        "available_seats": 80
+      }
+    ]
+  },
+  {
+    "id": "trn_013",
+    "provider": "MockRail",
+    "train_name": "Chennai Express",
+    "train_number": "12163",
+    "source": "HYD",
+    "destination": "MAA",
+    "departure_hour": "11:30",
+    "arrival_hour": "23:45",
+    "arrival_day_offset": 0,
+    "duration_minutes": 735,
+    "status": "scheduled",
+    "rating": 4.0,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 285,
+        "available_seats": 160
+      },
+      {
+        "class_type": "3ac",
+        "price": 820,
+        "available_seats": 56
+      },
+      {
+        "class_type": "2ac",
+        "price": 1180,
+        "available_seats": 24
+      }
+    ]
+  },
+  {
+    "id": "trn_014",
+    "provider": "MockRail",
+    "train_name": "Hussainsagar Express",
+    "train_number": "12701",
+    "source": "HYD",
+    "destination": "BOM",
+    "departure_hour": "16:00",
+    "arrival_hour": "10:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1110,
+    "status": "scheduled",
+    "rating": 3.7,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 465,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 1280,
+        "available_seats": 64
+      },
+      {
+        "class_type": "2ac",
+        "price": 1850,
+        "available_seats": 32
+      }
+    ]
+  },
+  {
+    "id": "trn_015",
+    "provider": "MockRail",
+    "train_name": "Mumbai Express",
+    "train_number": "12115",
+    "source": "HYD",
+    "destination": "BOM",
+    "departure_hour": "22:30",
+    "arrival_hour": "16:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1050,
+    "status": "scheduled",
+    "rating": 3.9,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 435,
+        "available_seats": 220
+      },
+      {
+        "class_type": "3ac",
+        "price": 1200,
+        "available_seats": 80
+      },
+      {
+        "class_type": "2ac",
+        "price": 1720,
+        "available_seats": 36
+      }
+    ]
+  },
+  {
+    "id": "trn_016",
+    "provider": "MockRail",
+    "train_name": "Sachkhand Express",
+    "train_number": "12715",
+    "source": "HYD",
+    "destination": "BOM",
+    "departure_hour": "06:30",
+    "arrival_hour": "23:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 990,
+    "status": "delayed",
+    "rating": 3.5,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 410,
+        "available_seats": 240
+      },
+      {
+        "class_type": "3ac",
+        "price": 1140,
+        "available_seats": 72
+      }
+    ]
+  },
+  {
+    "id": "trn_017",
+    "provider": "MockRail",
+    "train_name": "Devagiri Express",
+    "train_number": "17613",
+    "source": "HYD",
+    "destination": "BOM",
+    "departure_hour": "11:00",
+    "arrival_hour": "05:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1110,
+    "status": "scheduled",
+    "rating": 3.8,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 450,
+        "available_seats": 180
+      },
+      {
+        "class_type": "3ac",
+        "price": 1220,
+        "available_seats": 60
+      },
+      {
+        "class_type": "2ac",
+        "price": 1780,
+        "available_seats": 28
+      }
+    ]
+  },
+  {
+    "id": "trn_018",
+    "provider": "MockRail",
+    "train_name": "Ajanta Express",
+    "train_number": "12071",
+    "source": "HYD",
+    "destination": "BOM",
+    "departure_hour": "18:45",
+    "arrival_hour": "13:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1095,
+    "status": "scheduled",
+    "rating": 3.6,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 420,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 1160,
+        "available_seats": 68
+      }
+    ]
+  },
+  {
+    "id": "trn_019",
+    "provider": "MockRail",
+    "train_name": "Rajdhani Express",
+    "train_number": "12423",
+    "source": "HYD",
+    "destination": "DEL",
+    "departure_hour": "06:55",
+    "arrival_hour": "10:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1625,
+    "status": "scheduled",
+    "rating": 4.3,
+    "class_options": [
+      {
+        "class_type": "3ac",
+        "price": 2180,
+        "available_seats": 48
+      },
+      {
+        "class_type": "2ac",
+        "price": 2950,
+        "available_seats": 20
+      }
+    ]
+  },
+  {
+    "id": "trn_020",
+    "provider": "MockRail",
+    "train_name": "AP Express",
+    "train_number": "12723",
+    "source": "HYD",
+    "destination": "DEL",
+    "departure_hour": "15:30",
+    "arrival_hour": "17:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1530,
+    "status": "scheduled",
+    "rating": 3.8,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 620,
+        "available_seats": 160
+      },
+      {
+        "class_type": "3ac",
+        "price": 1680,
+        "available_seats": 56
+      },
+      {
+        "class_type": "2ac",
+        "price": 2350,
+        "available_seats": 24
+      }
+    ]
+  },
+  {
+    "id": "trn_021",
+    "provider": "MockRail",
+    "train_name": "Nizamuddin Express",
+    "train_number": "12717",
+    "source": "HYD",
+    "destination": "DEL",
+    "departure_hour": "20:00",
+    "arrival_hour": "21:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1530,
+    "status": "scheduled",
+    "rating": 3.9,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 590,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 1620,
+        "available_seats": 72
+      },
+      {
+        "class_type": "2ac",
+        "price": 2280,
+        "available_seats": 32
+      }
+    ]
+  },
+  {
+    "id": "trn_022",
+    "provider": "MockRail",
+    "train_name": "Telangana Express",
+    "train_number": "12749",
+    "source": "HYD",
+    "destination": "DEL",
+    "departure_hour": "07:30",
+    "arrival_hour": "11:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1530,
+    "status": "delayed",
+    "rating": 3.6,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 560,
+        "available_seats": 240
+      },
+      {
+        "class_type": "3ac",
+        "price": 1550,
+        "available_seats": 80
+      }
+    ]
+  },
+  {
+    "id": "trn_023",
+    "provider": "MockRail",
+    "train_name": "Dakshin Express",
+    "train_number": "12721",
+    "source": "HYD",
+    "destination": "DEL",
+    "departure_hour": "12:50",
+    "arrival_hour": "14:20",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1530,
+    "status": "scheduled",
+    "rating": 3.7,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 575,
+        "available_seats": 180
+      },
+      {
+        "class_type": "3ac",
+        "price": 1590,
+        "available_seats": 60
+      },
+      {
+        "class_type": "2ac",
+        "price": 2320,
+        "available_seats": 28
+      }
+    ]
+  },
+  {
+    "id": "trn_024",
+    "provider": "MockRail",
+    "train_name": "Shatabdi Express",
+    "train_number": "12007",
+    "source": "BLR",
+    "destination": "MAA",
+    "departure_hour": "06:00",
+    "arrival_hour": "11:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 300,
+    "status": "scheduled",
+    "rating": 4.5,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 720,
+        "available_seats": 80
+      },
+      {
+        "class_type": "2ac",
+        "price": 1380,
+        "available_seats": 24
+      }
+    ]
+  },
+  {
+    "id": "trn_025",
+    "provider": "MockRail",
+    "train_name": "Brindavan Express",
+    "train_number": "12639",
+    "source": "BLR",
+    "destination": "MAA",
+    "departure_hour": "07:50",
+    "arrival_hour": "13:10",
+    "arrival_day_offset": 0,
+    "duration_minutes": 320,
+    "status": "scheduled",
+    "rating": 4.1,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 580,
+        "available_seats": 120
+      },
+      {
+        "class_type": "3ac",
+        "price": 880,
+        "available_seats": 48
+      }
+    ]
+  },
+  {
+    "id": "trn_026",
+    "provider": "MockRail",
+    "train_name": "Lalbagh Express",
+    "train_number": "12607",
+    "source": "BLR",
+    "destination": "MAA",
+    "departure_hour": "06:30",
+    "arrival_hour": "12:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 330,
+    "status": "scheduled",
+    "rating": 4.2,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 550,
+        "available_seats": 140
+      },
+      {
+        "class_type": "3ac",
+        "price": 840,
+        "available_seats": 56
+      }
+    ]
+  },
+  {
+    "id": "trn_027",
+    "provider": "MockRail",
+    "train_name": "Intercity Express",
+    "train_number": "12605",
+    "source": "BLR",
+    "destination": "MAA",
+    "departure_hour": "15:00",
+    "arrival_hour": "21:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 360,
+    "status": "delayed",
+    "rating": 3.8,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 480,
+        "available_seats": 160
+      },
+      {
+        "class_type": "3ac",
+        "price": 780,
+        "available_seats": 72
+      }
+    ]
+  },
+  {
+    "id": "trn_028",
+    "provider": "MockRail",
+    "train_name": "Udyan Express",
+    "train_number": "11301",
+    "source": "BLR",
+    "destination": "BOM",
+    "departure_hour": "20:00",
+    "arrival_hour": "20:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1440,
+    "status": "scheduled",
+    "rating": 3.7,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 520,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 1380,
+        "available_seats": 64
+      },
+      {
+        "class_type": "2ac",
+        "price": 1980,
+        "available_seats": 28
+      }
+    ]
+  },
+  {
+    "id": "trn_029",
+    "provider": "MockRail",
+    "train_name": "Prasanthi Express",
+    "train_number": "16535",
+    "source": "BLR",
+    "destination": "BOM",
+    "departure_hour": "22:30",
+    "arrival_hour": "22:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1410,
+    "status": "scheduled",
+    "rating": 3.5,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 490,
+        "available_seats": 220
+      },
+      {
+        "class_type": "3ac",
+        "price": 1320,
+        "available_seats": 72
+      }
+    ]
+  },
+  {
+    "id": "trn_030",
+    "provider": "MockRail",
+    "train_name": "Island Express",
+    "train_number": "16317",
+    "source": "BLR",
+    "destination": "BOM",
+    "departure_hour": "08:00",
+    "arrival_hour": "10:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1440,
+    "status": "delayed",
+    "rating": 3.4,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 465,
+        "available_seats": 240
+      },
+      {
+        "class_type": "3ac",
+        "price": 1260,
+        "available_seats": 80
+      }
+    ]
+  },
+  {
+    "id": "trn_031",
+    "provider": "MockRail",
+    "train_name": "Shatabdi Express",
+    "train_number": "12015",
+    "source": "DEL",
+    "destination": "JAI",
+    "departure_hour": "06:05",
+    "arrival_hour": "10:40",
+    "arrival_day_offset": 0,
+    "duration_minutes": 275,
+    "status": "scheduled",
+    "rating": 4.6,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 680,
+        "available_seats": 100
+      },
+      {
+        "class_type": "2ac",
+        "price": 1280,
+        "available_seats": 20
+      }
+    ]
+  },
+  {
+    "id": "trn_032",
+    "provider": "MockRail",
+    "train_name": "Ajmer Express",
+    "train_number": "12959",
+    "source": "DEL",
+    "destination": "JAI",
+    "departure_hour": "08:30",
+    "arrival_hour": "13:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 270,
+    "status": "scheduled",
+    "rating": 4.0,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 185,
+        "available_seats": 280
+      },
+      {
+        "class_type": "3ac",
+        "price": 520,
+        "available_seats": 96
+      },
+      {
+        "class_type": "chair_car",
+        "price": 420,
+        "available_seats": 120
+      },
+      {
+        "class_type": "2ac",
+        "price": 760,
+        "available_seats": 40
+      }
+    ]
+  },
+  {
+    "id": "trn_033",
+    "provider": "MockRail",
+    "train_name": "Intercity Express",
+    "train_number": "12457",
+    "source": "DEL",
+    "destination": "JAI",
+    "departure_hour": "14:00",
+    "arrival_hour": "18:30",
+    "arrival_day_offset": 0,
+    "duration_minutes": 270,
+    "status": "scheduled",
+    "rating": 3.9,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 390,
+        "available_seats": 140
+      },
+      {
+        "class_type": "3ac",
+        "price": 500,
+        "available_seats": 80
+      }
+    ]
+  },
+  {
+    "id": "trn_034",
+    "provider": "MockRail",
+    "train_name": "Pink City Express",
+    "train_number": "12461",
+    "source": "DEL",
+    "destination": "JAI",
+    "departure_hour": "16:45",
+    "arrival_hour": "21:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 255,
+    "status": "scheduled",
+    "rating": 4.1,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 165,
+        "available_seats": 300
+      },
+      {
+        "class_type": "3ac",
+        "price": 490,
+        "available_seats": 104
+      },
+      {
+        "class_type": "chair_car",
+        "price": 360,
+        "available_seats": 160
+      }
+    ]
+  },
+  {
+    "id": "trn_035",
+    "provider": "MockRail",
+    "train_name": "Jaipur SF Express",
+    "train_number": "12985",
+    "source": "DEL",
+    "destination": "JAI",
+    "departure_hour": "19:30",
+    "arrival_hour": "23:45",
+    "arrival_day_offset": 0,
+    "duration_minutes": 255,
+    "status": "delayed",
+    "rating": 3.7,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 155,
+        "available_seats": 260
+      },
+      {
+        "class_type": "3ac",
+        "price": 465,
+        "available_seats": 96
+      }
+    ]
+  },
+  {
+    "id": "trn_036",
+    "provider": "MockRail",
+    "train_name": "Rajdhani Express",
+    "train_number": "12951",
+    "source": "DEL",
+    "destination": "BOM",
+    "departure_hour": "17:00",
+    "arrival_hour": "09:55",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1015,
+    "status": "scheduled",
+    "rating": 4.5,
+    "class_options": [
+      {
+        "class_type": "3ac",
+        "price": 2050,
+        "available_seats": 44
+      },
+      {
+        "class_type": "2ac",
+        "price": 2820,
+        "available_seats": 16
+      }
+    ]
+  },
+  {
+    "id": "trn_037",
+    "provider": "MockRail",
+    "train_name": "August Kranti Rajdhani",
+    "train_number": "12953",
+    "source": "DEL",
+    "destination": "BOM",
+    "departure_hour": "17:40",
+    "arrival_hour": "10:40",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1020,
+    "status": "scheduled",
+    "rating": 4.4,
+    "class_options": [
+      {
+        "class_type": "3ac",
+        "price": 1980,
+        "available_seats": 52
+      },
+      {
+        "class_type": "2ac",
+        "price": 2720,
+        "available_seats": 20
+      }
+    ]
+  },
+  {
+    "id": "trn_038",
+    "provider": "MockRail",
+    "train_name": "Mumbai Mail",
+    "train_number": "12137",
+    "source": "DEL",
+    "destination": "BOM",
+    "departure_hour": "20:00",
+    "arrival_hour": "13:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1020,
+    "status": "scheduled",
+    "rating": 3.8,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 550,
+        "available_seats": 180
+      },
+      {
+        "class_type": "3ac",
+        "price": 1580,
+        "available_seats": 64
+      },
+      {
+        "class_type": "2ac",
+        "price": 2240,
+        "available_seats": 28
+      }
+    ]
+  },
+  {
+    "id": "trn_039",
+    "provider": "MockRail",
+    "train_name": "Mandovi Express",
+    "train_number": "10103",
+    "source": "BOM",
+    "destination": "GOI",
+    "departure_hour": "07:10",
+    "arrival_hour": "19:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 710,
+    "status": "scheduled",
+    "rating": 4.0,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 285,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 820,
+        "available_seats": 64
+      },
+      {
+        "class_type": "2ac",
+        "price": 1190,
+        "available_seats": 28
+      }
+    ]
+  },
+  {
+    "id": "trn_040",
+    "provider": "MockRail",
+    "train_name": "Konkan Kanya Express",
+    "train_number": "10111",
+    "source": "BOM",
+    "destination": "GOI",
+    "departure_hour": "22:30",
+    "arrival_hour": "10:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 720,
+    "status": "scheduled",
+    "rating": 4.2,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 270,
+        "available_seats": 220
+      },
+      {
+        "class_type": "3ac",
+        "price": 790,
+        "available_seats": 72
+      },
+      {
+        "class_type": "2ac",
+        "price": 1150,
+        "available_seats": 32
+      }
+    ]
+  },
+  {
+    "id": "trn_041",
+    "provider": "MockRail",
+    "train_name": "Gatimaan Express",
+    "train_number": "12049",
+    "source": "DEL",
+    "destination": "AGR",
+    "departure_hour": "08:10",
+    "arrival_hour": "09:50",
+    "arrival_day_offset": 0,
+    "duration_minutes": 100,
+    "status": "scheduled",
+    "rating": 4.7,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 750,
+        "available_seats": 120
+      },
+      {
+        "class_type": "2ac",
+        "price": 1490,
+        "available_seats": 32
+      }
+    ]
+  },
+  {
+    "id": "trn_042",
+    "provider": "MockRail",
+    "train_name": "Taj Express",
+    "train_number": "12279",
+    "source": "DEL",
+    "destination": "AGR",
+    "departure_hour": "07:15",
+    "arrival_hour": "10:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 165,
+    "status": "scheduled",
+    "rating": 4.1,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 350,
+        "available_seats": 180
+      },
+      {
+        "class_type": "sleeper",
+        "price": 165,
+        "available_seats": 280
+      }
+    ]
+  },
+  {
+    "id": "trn_043",
+    "provider": "MockRail",
+    "train_name": "Shatabdi Express",
+    "train_number": "12001",
+    "source": "DEL",
+    "destination": "AGR",
+    "departure_hour": "06:00",
+    "arrival_hour": "08:00",
+    "arrival_day_offset": 0,
+    "duration_minutes": 120,
+    "status": "scheduled",
+    "rating": 4.5,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 680,
+        "available_seats": 100
+      },
+      {
+        "class_type": "2ac",
+        "price": 1280,
+        "available_seats": 24
+      }
+    ]
+  },
+  {
+    "id": "trn_044",
+    "provider": "MockRail",
+    "train_name": "Rajdhani Express",
+    "train_number": "12381",
+    "source": "DEL",
+    "destination": "VNS",
+    "departure_hour": "18:30",
+    "arrival_hour": "06:50",
+    "arrival_day_offset": 1,
+    "duration_minutes": 740,
+    "status": "scheduled",
+    "rating": 4.4,
+    "class_options": [
+      {
+        "class_type": "3ac",
+        "price": 1650,
+        "available_seats": 52
+      },
+      {
+        "class_type": "2ac",
+        "price": 2250,
+        "available_seats": 24
+      }
+    ]
+  },
+  {
+    "id": "trn_045",
+    "provider": "MockRail",
+    "train_name": "Kashi Vishwanath Express",
+    "train_number": "15003",
+    "source": "DEL",
+    "destination": "VNS",
+    "departure_hour": "21:30",
+    "arrival_hour": "12:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 870,
+    "status": "scheduled",
+    "rating": 3.8,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 420,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 1100,
+        "available_seats": 64
+      },
+      {
+        "class_type": "2ac",
+        "price": 1580,
+        "available_seats": 28
+      }
+    ]
+  },
+  {
+    "id": "trn_046",
+    "provider": "MockRail",
+    "train_name": "Vibhuti Express",
+    "train_number": "12333",
+    "source": "DEL",
+    "destination": "VNS",
+    "departure_hour": "14:40",
+    "arrival_hour": "03:10",
+    "arrival_day_offset": 1,
+    "duration_minutes": 750,
+    "status": "delayed",
+    "rating": 3.6,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 390,
+        "available_seats": 240
+      },
+      {
+        "class_type": "3ac",
+        "price": 1020,
+        "available_seats": 72
+      }
+    ]
+  },
+  {
+    "id": "trn_047",
+    "provider": "MockRail",
+    "train_name": "Shatabdi Express",
+    "train_number": "12013",
+    "source": "DEL",
+    "destination": "ATQ",
+    "departure_hour": "07:20",
+    "arrival_hour": "13:15",
+    "arrival_day_offset": 0,
+    "duration_minutes": 355,
+    "status": "scheduled",
+    "rating": 4.6,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 890,
+        "available_seats": 100
+      },
+      {
+        "class_type": "2ac",
+        "price": 1680,
+        "available_seats": 20
+      }
+    ]
+  },
+  {
+    "id": "trn_048",
+    "provider": "MockRail",
+    "train_name": "Golden Temple Mail",
+    "train_number": "12903",
+    "source": "DEL",
+    "destination": "ATQ",
+    "departure_hour": "21:20",
+    "arrival_hour": "04:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 430,
+    "status": "scheduled",
+    "rating": 3.9,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 295,
+        "available_seats": 220
+      },
+      {
+        "class_type": "3ac",
+        "price": 820,
+        "available_seats": 72
+      },
+      {
+        "class_type": "2ac",
+        "price": 1180,
+        "available_seats": 32
+      }
+    ]
+  },
+  {
+    "id": "trn_049",
+    "provider": "MockRail",
+    "train_name": "Intercity Express",
+    "train_number": "12029",
+    "source": "DEL",
+    "destination": "ATQ",
+    "departure_hour": "07:40",
+    "arrival_hour": "14:20",
+    "arrival_day_offset": 0,
+    "duration_minutes": 400,
+    "status": "scheduled",
+    "rating": 4.0,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 450,
+        "available_seats": 140
+      },
+      {
+        "class_type": "3ac",
+        "price": 680,
+        "available_seats": 80
+      }
+    ]
+  },
+  {
+    "id": "trn_050",
+    "provider": "MockRail",
+    "train_name": "Rajdhani Express",
+    "train_number": "12301",
+    "source": "DEL",
+    "destination": "CCU",
+    "departure_hour": "16:55",
+    "arrival_hour": "09:55",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1020,
+    "status": "scheduled",
+    "rating": 4.5,
+    "class_options": [
+      {
+        "class_type": "3ac",
+        "price": 2150,
+        "available_seats": 48
+      },
+      {
+        "class_type": "2ac",
+        "price": 2920,
+        "available_seats": 20
+      }
+    ]
+  },
+  {
+    "id": "trn_051",
+    "provider": "MockRail",
+    "train_name": "Poorva Express",
+    "train_number": "12381",
+    "source": "DEL",
+    "destination": "CCU",
+    "departure_hour": "08:00",
+    "arrival_hour": "06:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1320,
+    "status": "scheduled",
+    "rating": 3.9,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 550,
+        "available_seats": 180
+      },
+      {
+        "class_type": "3ac",
+        "price": 1480,
+        "available_seats": 60
+      },
+      {
+        "class_type": "2ac",
+        "price": 2120,
+        "available_seats": 24
+      }
+    ]
+  },
+  {
+    "id": "trn_052",
+    "provider": "MockRail",
+    "train_name": "Chetak Express",
+    "train_number": "12982",
+    "source": "DEL",
+    "destination": "UDR",
+    "departure_hour": "19:35",
+    "arrival_hour": "08:45",
+    "arrival_day_offset": 1,
+    "duration_minutes": 790,
+    "status": "scheduled",
+    "rating": 3.9,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 420,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 1120,
+        "available_seats": 64
+      },
+      {
+        "class_type": "2ac",
+        "price": 1620,
+        "available_seats": 28
+      }
+    ]
+  },
+  {
+    "id": "trn_053",
+    "provider": "MockRail",
+    "train_name": "Mewar Express",
+    "train_number": "12963",
+    "source": "DEL",
+    "destination": "UDR",
+    "departure_hour": "18:30",
+    "arrival_hour": "07:00",
+    "arrival_day_offset": 1,
+    "duration_minutes": 750,
+    "status": "scheduled",
+    "rating": 4.0,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 390,
+        "available_seats": 220
+      },
+      {
+        "class_type": "3ac",
+        "price": 1050,
+        "available_seats": 72
+      },
+      {
+        "class_type": "2ac",
+        "price": 1520,
+        "available_seats": 32
+      }
+    ]
+  },
+  {
+    "id": "trn_054",
+    "provider": "MockRail",
+    "train_name": "Mandore Express",
+    "train_number": "12461",
+    "source": "DEL",
+    "destination": "JDH",
+    "departure_hour": "20:00",
+    "arrival_hour": "07:45",
+    "arrival_day_offset": 1,
+    "duration_minutes": 705,
+    "status": "scheduled",
+    "rating": 4.0,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 370,
+        "available_seats": 220
+      },
+      {
+        "class_type": "3ac",
+        "price": 980,
+        "available_seats": 72
+      },
+      {
+        "class_type": "2ac",
+        "price": 1420,
+        "available_seats": 32
+      }
+    ]
+  },
+  {
+    "id": "trn_055",
+    "provider": "MockRail",
+    "train_name": "Intercity Express",
+    "train_number": "12465",
+    "source": "DEL",
+    "destination": "JDH",
+    "departure_hour": "06:05",
+    "arrival_hour": "16:35",
+    "arrival_day_offset": 0,
+    "duration_minutes": 630,
+    "status": "scheduled",
+    "rating": 3.8,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 480,
+        "available_seats": 140
+      },
+      {
+        "class_type": "sleeper",
+        "price": 330,
+        "available_seats": 200
+      }
+    ]
+  },
+  {
+    "id": "trn_056",
+    "provider": "MockRail",
+    "train_name": "Mewar Express",
+    "train_number": "12955",
+    "source": "BOM",
+    "destination": "UDR",
+    "departure_hour": "18:30",
+    "arrival_hour": "06:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 720,
+    "status": "scheduled",
+    "rating": 3.9,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 410,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 1100,
+        "available_seats": 64
+      },
+      {
+        "class_type": "2ac",
+        "price": 1580,
+        "available_seats": 28
+      }
+    ]
+  },
+  {
+    "id": "trn_057",
+    "provider": "MockRail",
+    "train_name": "Chamundi Express",
+    "train_number": "16216",
+    "source": "BLR",
+    "destination": "MYQ",
+    "departure_hour": "06:15",
+    "arrival_hour": "09:05",
+    "arrival_day_offset": 0,
+    "duration_minutes": 170,
+    "status": "scheduled",
+    "rating": 4.2,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 145,
+        "available_seats": 160
+      },
+      {
+        "class_type": "sleeper",
+        "price": 110,
+        "available_seats": 220
+      }
+    ]
+  },
+  {
+    "id": "trn_058",
+    "provider": "MockRail",
+    "train_name": "Kaveri Express",
+    "train_number": "16021",
+    "source": "BLR",
+    "destination": "MYQ",
+    "departure_hour": "14:30",
+    "arrival_hour": "17:20",
+    "arrival_day_offset": 0,
+    "duration_minutes": 170,
+    "status": "scheduled",
+    "rating": 4.0,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 130,
+        "available_seats": 180
+      },
+      {
+        "class_type": "sleeper",
+        "price": 95,
+        "available_seats": 240
+      }
+    ]
+  },
+  {
+    "id": "trn_059",
+    "provider": "MockRail",
+    "train_name": "Shatabdi Express",
+    "train_number": "12007",
+    "source": "BLR",
+    "destination": "MYQ",
+    "departure_hour": "11:00",
+    "arrival_hour": "13:25",
+    "arrival_day_offset": 0,
+    "duration_minutes": 145,
+    "status": "scheduled",
+    "rating": 4.5,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 380,
+        "available_seats": 100
+      },
+      {
+        "class_type": "2ac",
+        "price": 720,
+        "available_seats": 20
+      }
+    ]
+  },
+  {
+    "id": "trn_060",
+    "provider": "MockRail",
+    "train_name": "Falaknuma Express",
+    "train_number": "12703",
+    "source": "HYD",
+    "destination": "CCU",
+    "departure_hour": "18:20",
+    "arrival_hour": "22:20",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1680,
+    "status": "scheduled",
+    "rating": 3.7,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 620,
+        "available_seats": 180
+      },
+      {
+        "class_type": "3ac",
+        "price": 1680,
+        "available_seats": 56
+      },
+      {
+        "class_type": "2ac",
+        "price": 2380,
+        "available_seats": 24
+      }
+    ]
+  },
+  {
+    "id": "trn_061",
+    "provider": "MockRail",
+    "train_name": "Shatabdi Express",
+    "train_number": "12017",
+    "source": "DEL",
+    "destination": "DED",
+    "departure_hour": "06:45",
+    "arrival_hour": "11:45",
+    "arrival_day_offset": 0,
+    "duration_minutes": 300,
+    "status": "scheduled",
+    "rating": 4.5,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 680,
+        "available_seats": 100
+      },
+      {
+        "class_type": "2ac",
+        "price": 1280,
+        "available_seats": 24
+      }
+    ]
+  },
+  {
+    "id": "trn_062",
+    "provider": "MockRail",
+    "train_name": "Mussoorie Express",
+    "train_number": "14041",
+    "source": "DEL",
+    "destination": "DED",
+    "departure_hour": "22:20",
+    "arrival_hour": "05:15",
+    "arrival_day_offset": 1,
+    "duration_minutes": 415,
+    "status": "scheduled",
+    "rating": 3.8,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 265,
+        "available_seats": 240
+      },
+      {
+        "class_type": "3ac",
+        "price": 760,
+        "available_seats": 80
+      },
+      {
+        "class_type": "2ac",
+        "price": 1100,
+        "available_seats": 36
+      }
+    ]
+  },
+  {
+    "id": "trn_063",
+    "provider": "MockRail",
+    "train_name": "Jan Shatabdi Express",
+    "train_number": "12081",
+    "source": "MAA",
+    "destination": "MYQ",
+    "departure_hour": "06:00",
+    "arrival_hour": "13:30",
+    "arrival_day_offset": 0,
+    "duration_minutes": 450,
+    "status": "scheduled",
+    "rating": 4.1,
+    "class_options": [
+      {
+        "class_type": "chair_car",
+        "price": 380,
+        "available_seats": 120
+      },
+      {
+        "class_type": "2ac",
+        "price": 720,
+        "available_seats": 20
+      }
+    ]
+  }
+]

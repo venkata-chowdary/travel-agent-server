@@ -5,9 +5,12 @@ from .travel import (
     TravelAgentStructuredResponse,
     WeatherNotes,
 )
+from .flight import FlightOption, FlightSearchResult
 
 __all__ = [
     "BudgetBreakdown",
+    "FlightOption",
+    "FlightSearchResult",
     "ItineraryDay",
     "ItineraryItem",
     "TravelAgentStructuredResponse",

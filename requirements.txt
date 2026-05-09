@@ -6,5 +6,8 @@ bcrypt
 PyJWT
 python-dotenv
 email-validator
+langchain-core
+langchain-google-genai
+langgraph
 pytest
 pytest-asyncio

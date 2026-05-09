@@ -1,0 +1,2762 @@
+[
+  {
+    "id": "rst_001",
+    "provider": "MockDine",
+    "name": "Thalassa",
+    "destination": "Goa",
+    "area": "Vagator",
+    "cuisine": "Mediterranean",
+    "price_per_person": 1800,
+    "veg_friendly": false,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-23:00",
+    "distance_from_center_km": 8.2,
+    "tags": [
+      "seafood",
+      "beachview",
+      "romantic",
+      "cocktails"
+    ]
+  },
+  {
+    "id": "rst_002",
+    "provider": "MockDine",
+    "name": "Gunpowder",
+    "destination": "Goa",
+    "area": "Assagao",
+    "cuisine": "South Indian",
+    "price_per_person": 900,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:30-22:00",
+    "distance_from_center_km": 7.5,
+    "tags": [
+      "vegetarian",
+      "heritage_house",
+      "trendy",
+      "local"
+    ]
+  },
+  {
+    "id": "rst_003",
+    "provider": "MockDine",
+    "name": "Britto's",
+    "destination": "Goa",
+    "area": "Baga Beach",
+    "cuisine": "Goan Seafood",
+    "price_per_person": 1200,
+    "veg_friendly": false,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-23:30",
+    "distance_from_center_km": 4.0,
+    "tags": [
+      "seafood",
+      "beachfront",
+      "family",
+      "live_music"
+    ]
+  },
+  {
+    "id": "rst_004",
+    "provider": "MockDine",
+    "name": "Martin's Corner",
+    "destination": "Goa",
+    "area": "Betalbatim",
+    "cuisine": "Goan",
+    "price_per_person": 1400,
+    "veg_friendly": false,
+    "rating": 4.4,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:00-23:00",
+    "distance_from_center_km": 18.0,
+    "tags": [
+      "seafood",
+      "local_favorite",
+      "authentic",
+      "fish_curry"
+    ]
+  },
+  {
+    "id": "rst_005",
+    "provider": "MockDine",
+    "name": "Cafe Chocolatti",
+    "destination": "Goa",
+    "area": "Panjim",
+    "cuisine": "Cafe",
+    "price_per_person": 450,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "breakfast",
+      "snacks"
+    ],
+    "opening_hours": "08:00-20:00",
+    "distance_from_center_km": 0.5,
+    "tags": [
+      "cafe",
+      "desserts",
+      "breakfast",
+      "quick_bite"
+    ]
+  },
+  {
+    "id": "rst_006",
+    "provider": "MockDine",
+    "name": "Vidyarthi Bhavan",
+    "destination": "Bengaluru",
+    "area": "Gandhi Bazaar",
+    "cuisine": "South Indian",
+    "price_per_person": 150,
+    "veg_friendly": true,
+    "rating": 4.7,
+    "meal_types": [
+      "breakfast",
+      "lunch"
+    ],
+    "opening_hours": "06:30-13:00",
+    "distance_from_center_km": 5.5,
+    "tags": [
+      "iconic",
+      "dosa",
+      "vegetarian",
+      "heritage",
+      "budget"
+    ]
+  },
+  {
+    "id": "rst_007",
+    "provider": "MockDine",
+    "name": "Karavalli",
+    "destination": "Bengaluru",
+    "area": "Residency Road",
+    "cuisine": "Coastal Karnataka",
+    "price_per_person": 2200,
+    "veg_friendly": false,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:30-15:00,19:00-23:00",
+    "distance_from_center_km": 3.2,
+    "tags": [
+      "coastal",
+      "seafood",
+      "fine_dining",
+      "award_winning"
+    ]
+  },
+  {
+    "id": "rst_008",
+    "provider": "MockDine",
+    "name": "Toit Brewpub",
+    "destination": "Bengaluru",
+    "area": "Indiranagar",
+    "cuisine": "Continental",
+    "price_per_person": 1200,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-00:00",
+    "distance_from_center_km": 6.8,
+    "tags": [
+      "craft_beer",
+      "pub",
+      "trendy",
+      "lively"
+    ]
+  },
+  {
+    "id": "rst_009",
+    "provider": "MockDine",
+    "name": "Truffles",
+    "destination": "Bengaluru",
+    "area": "Koramangala",
+    "cuisine": "American",
+    "price_per_person": 600,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "lunch",
+      "dinner",
+      "snacks"
+    ],
+    "opening_hours": "12:00-23:30",
+    "distance_from_center_km": 7.5,
+    "tags": [
+      "burgers",
+      "casual",
+      "popular",
+      "comfort_food"
+    ]
+  },
+  {
+    "id": "rst_010",
+    "provider": "MockDine",
+    "name": "Meghana Foods",
+    "destination": "Bengaluru",
+    "area": "Residency Road",
+    "cuisine": "Biryani",
+    "price_per_person": 350,
+    "veg_friendly": false,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:00-23:00",
+    "distance_from_center_km": 3.0,
+    "tags": [
+      "biryani",
+      "local_favorite",
+      "value_for_money"
+    ]
+  },
+  {
+    "id": "rst_011",
+    "provider": "MockDine",
+    "name": "Paradise Restaurant",
+    "destination": "Hyderabad",
+    "area": "Secunderabad",
+    "cuisine": "Biryani",
+    "price_per_person": 450,
+    "veg_friendly": false,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:30-23:30",
+    "distance_from_center_km": 8.5,
+    "tags": [
+      "biryani",
+      "iconic",
+      "Hyderabadi",
+      "must_visit"
+    ]
+  },
+  {
+    "id": "rst_012",
+    "provider": "MockDine",
+    "name": "Rayalaseema Ruchulu",
+    "destination": "Hyderabad",
+    "area": "Jubilee Hills",
+    "cuisine": "Andhra",
+    "price_per_person": 600,
+    "veg_friendly": false,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-23:00",
+    "distance_from_center_km": 9.5,
+    "tags": [
+      "spicy",
+      "Andhra",
+      "authentic",
+      "thali"
+    ]
+  },
+  {
+    "id": "rst_013",
+    "provider": "MockDine",
+    "name": "Cafe Niloufer",
+    "destination": "Hyderabad",
+    "area": "Red Hills",
+    "cuisine": "Irani Cafe",
+    "price_per_person": 120,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "snacks"
+    ],
+    "opening_hours": "05:30-22:00",
+    "distance_from_center_km": 4.0,
+    "tags": [
+      "chai",
+      "osmania_biscuits",
+      "iconic",
+      "budget",
+      "heritage"
+    ]
+  },
+  {
+    "id": "rst_014",
+    "provider": "MockDine",
+    "name": "Hotel Shadab",
+    "destination": "Hyderabad",
+    "area": "Charminar",
+    "cuisine": "Mughlai",
+    "price_per_person": 350,
+    "veg_friendly": false,
+    "rating": 4.3,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-23:00",
+    "distance_from_center_km": 5.0,
+    "tags": [
+      "biryani",
+      "haleem",
+      "old_city",
+      "authentic"
+    ]
+  },
+  {
+    "id": "rst_015",
+    "provider": "MockDine",
+    "name": "Waterfront Restaurant Taj Banjara",
+    "destination": "Hyderabad",
+    "area": "Banjara Hills",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 2500,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:00-23:30",
+    "distance_from_center_km": 9.0,
+    "tags": [
+      "lake_view",
+      "fine_dining",
+      "buffet",
+      "weekend_brunch"
+    ]
+  },
+  {
+    "id": "rst_016",
+    "provider": "MockDine",
+    "name": "Leopold Cafe",
+    "destination": "Mumbai",
+    "area": "Colaba",
+    "cuisine": "Continental",
+    "price_per_person": 800,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:30-00:00",
+    "distance_from_center_km": 1.5,
+    "tags": [
+      "iconic",
+      "historic",
+      "backpacker",
+      "casual"
+    ]
+  },
+  {
+    "id": "rst_017",
+    "provider": "MockDine",
+    "name": "Trishna",
+    "destination": "Mumbai",
+    "area": "Fort",
+    "cuisine": "Coastal Seafood",
+    "price_per_person": 2000,
+    "veg_friendly": false,
+    "rating": 4.7,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-15:30,18:30-23:30",
+    "distance_from_center_km": 2.8,
+    "tags": [
+      "seafood",
+      "award_winning",
+      "Maharashtrian",
+      "crab"
+    ]
+  },
+  {
+    "id": "rst_018",
+    "provider": "MockDine",
+    "name": "Sardar Refreshments",
+    "destination": "Mumbai",
+    "area": "Tardeo",
+    "cuisine": "Indian Street Food",
+    "price_per_person": 100,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "snacks"
+    ],
+    "opening_hours": "16:00-00:00",
+    "distance_from_center_km": 4.5,
+    "tags": [
+      "pav_bhaji",
+      "street_food",
+      "budget",
+      "iconic"
+    ]
+  },
+  {
+    "id": "rst_019",
+    "provider": "MockDine",
+    "name": "Cafe Mondegar",
+    "destination": "Mumbai",
+    "area": "Colaba",
+    "cuisine": "Cafe",
+    "price_per_person": 700,
+    "veg_friendly": true,
+    "rating": 4.1,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "snacks"
+    ],
+    "opening_hours": "08:00-23:30",
+    "distance_from_center_km": 1.8,
+    "tags": [
+      "music",
+      "cafe",
+      "beer",
+      "social"
+    ]
+  },
+  {
+    "id": "rst_020",
+    "provider": "MockDine",
+    "name": "Britannia & Co",
+    "destination": "Mumbai",
+    "area": "Ballard Estate",
+    "cuisine": "Parsi",
+    "price_per_person": 600,
+    "veg_friendly": false,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch"
+    ],
+    "opening_hours": "11:30-16:00",
+    "distance_from_center_km": 3.0,
+    "tags": [
+      "Parsi",
+      "heritage",
+      "berry_pulao",
+      "unique",
+      "must_visit"
+    ]
+  },
+  {
+    "id": "rst_021",
+    "provider": "MockDine",
+    "name": "Karim's",
+    "destination": "Delhi",
+    "area": "Old Delhi",
+    "cuisine": "Mughlai",
+    "price_per_person": 400,
+    "veg_friendly": false,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "09:00-00:00",
+    "distance_from_center_km": 8.5,
+    "tags": [
+      "kebabs",
+      "Mughlai",
+      "iconic",
+      "heritage",
+      "mutton"
+    ]
+  },
+  {
+    "id": "rst_022",
+    "provider": "MockDine",
+    "name": "Indian Accent",
+    "destination": "Delhi",
+    "area": "The Lodhi",
+    "hotel_type": "luxury",
+    "cuisine": "Modern Indian",
+    "price_per_person": 4500,
+    "veg_friendly": true,
+    "rating": 4.8,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:30-14:45,19:00-23:00",
+    "distance_from_center_km": 5.0,
+    "tags": [
+      "fine_dining",
+      "award_winning",
+      "innovative",
+      "tasting_menu"
+    ]
+  },
+  {
+    "id": "rst_023",
+    "provider": "MockDine",
+    "name": "Moti Mahal Delux",
+    "destination": "Delhi",
+    "area": "Daryaganj",
+    "cuisine": "Mughlai",
+    "price_per_person": 700,
+    "veg_friendly": false,
+    "rating": 4.3,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-23:30",
+    "distance_from_center_km": 7.0,
+    "tags": [
+      "butter_chicken_origin",
+      "dal_makhani",
+      "iconic",
+      "North_Indian"
+    ]
+  },
+  {
+    "id": "rst_024",
+    "provider": "MockDine",
+    "name": "Paranthe Wali Gali",
+    "destination": "Delhi",
+    "area": "Chandni Chowk",
+    "cuisine": "Indian Street Food",
+    "price_per_person": 200,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "snacks"
+    ],
+    "opening_hours": "08:00-21:00",
+    "distance_from_center_km": 9.0,
+    "tags": [
+      "street_food",
+      "paranthas",
+      "heritage",
+      "vegetarian",
+      "budget"
+    ]
+  },
+  {
+    "id": "rst_025",
+    "provider": "MockDine",
+    "name": "Bukhara",
+    "destination": "Delhi",
+    "area": "ITC Maurya Sheraton",
+    "cuisine": "North Indian",
+    "price_per_person": 5000,
+    "veg_friendly": false,
+    "rating": 4.7,
+    "meal_types": [
+      "dinner"
+    ],
+    "opening_hours": "12:30-14:45,19:30-23:15",
+    "distance_from_center_km": 5.8,
+    "tags": [
+      "fine_dining",
+      "dal_bukhara",
+      "tandoor",
+      "famous",
+      "international"
+    ]
+  },
+  {
+    "id": "rst_026",
+    "provider": "MockDine",
+    "name": "Laxmi Mishthan Bhandar",
+    "destination": "Jaipur",
+    "area": "Johari Bazaar",
+    "cuisine": "Rajasthani",
+    "price_per_person": 250,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "snacks"
+    ],
+    "opening_hours": "08:00-22:30",
+    "distance_from_center_km": 1.0,
+    "tags": [
+      "sweets",
+      "vegetarian",
+      "iconic",
+      "rabri",
+      "budget"
+    ]
+  },
+  {
+    "id": "rst_027",
+    "provider": "MockDine",
+    "name": "Chokhi Dhani",
+    "destination": "Jaipur",
+    "area": "Tonk Road",
+    "cuisine": "Rajasthani",
+    "price_per_person": 1200,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "dinner"
+    ],
+    "opening_hours": "17:00-23:00",
+    "distance_from_center_km": 20.0,
+    "tags": [
+      "cultural",
+      "thali",
+      "folk_music",
+      "ethnic_village",
+      "experience"
+    ]
+  },
+  {
+    "id": "rst_028",
+    "provider": "MockDine",
+    "name": "Niros Restaurant",
+    "destination": "Jaipur",
+    "area": "MI Road",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 800,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "10:00-23:00",
+    "distance_from_center_km": 2.5,
+    "tags": [
+      "heritage",
+      "family",
+      "AC",
+      "classic",
+      "North_Indian"
+    ]
+  },
+  {
+    "id": "rst_029",
+    "provider": "MockDine",
+    "name": "Suvarna Mahal",
+    "destination": "Jaipur",
+    "area": "Rambagh Palace",
+    "cuisine": "Royal Rajasthani",
+    "price_per_person": 4500,
+    "veg_friendly": true,
+    "rating": 4.7,
+    "meal_types": [
+      "dinner"
+    ],
+    "opening_hours": "19:00-23:30",
+    "distance_from_center_km": 4.0,
+    "tags": [
+      "royal",
+      "heritage",
+      "thali",
+      "fine_dining",
+      "palace"
+    ]
+  },
+  {
+    "id": "rst_030",
+    "provider": "MockDine",
+    "name": "Rawat Mishthan Bhandar",
+    "destination": "Jaipur",
+    "area": "Station Road",
+    "cuisine": "Rajasthani",
+    "price_per_person": 200,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "snacks"
+    ],
+    "opening_hours": "07:00-22:00",
+    "distance_from_center_km": 3.0,
+    "tags": [
+      "kachori",
+      "sweets",
+      "budget",
+      "iconic",
+      "local"
+    ]
+  },
+  {
+    "id": "rst_031",
+    "provider": "MockDine",
+    "name": "Fort House Restaurant",
+    "destination": "Kochi",
+    "area": "Fort Kochi",
+    "cuisine": "Kerala Seafood",
+    "price_per_person": 1200,
+    "veg_friendly": false,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-22:30",
+    "distance_from_center_km": 0.5,
+    "tags": [
+      "seafood",
+      "waterfront",
+      "Kerala",
+      "fish_curry"
+    ]
+  },
+  {
+    "id": "rst_032",
+    "provider": "MockDine",
+    "name": "Dhe Puttu",
+    "destination": "Kochi",
+    "area": "Ernakulam",
+    "cuisine": "Kerala",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch"
+    ],
+    "opening_hours": "07:00-21:00",
+    "distance_from_center_km": 3.5,
+    "tags": [
+      "puttu",
+      "Kerala_breakfast",
+      "local",
+      "authentic",
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "rst_033",
+    "provider": "MockDine",
+    "name": "Kayees Rahmathulla Hotel",
+    "destination": "Kochi",
+    "area": "Mattancherry",
+    "cuisine": "Malabar Muslim",
+    "price_per_person": 400,
+    "veg_friendly": false,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "10:00-22:00",
+    "distance_from_center_km": 2.0,
+    "tags": [
+      "biryani",
+      "Malabar",
+      "local_favorite",
+      "authentic"
+    ]
+  },
+  {
+    "id": "rst_034",
+    "provider": "MockDine",
+    "name": "The Rice Boat",
+    "destination": "Kochi",
+    "area": "Willingdon Island",
+    "cuisine": "Kerala Seafood",
+    "price_per_person": 2800,
+    "veg_friendly": false,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:30-15:00,19:00-23:00",
+    "distance_from_center_km": 5.0,
+    "tags": [
+      "fine_dining",
+      "backwater_view",
+      "seafood",
+      "romantic"
+    ]
+  },
+  {
+    "id": "rst_035",
+    "provider": "MockDine",
+    "name": "Shri Krishna Inn",
+    "destination": "Kochi",
+    "area": "Broadway",
+    "cuisine": "South Indian",
+    "price_per_person": 120,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "breakfast",
+      "lunch"
+    ],
+    "opening_hours": "06:30-15:30",
+    "distance_from_center_km": 3.8,
+    "tags": [
+      "vegetarian",
+      "thali",
+      "sadhya",
+      "budget",
+      "authentic"
+    ]
+  },
+  {
+    "id": "rst_036",
+    "provider": "MockDine",
+    "name": "Johnson's Cafe",
+    "destination": "Manali",
+    "area": "Circuit House Road",
+    "cuisine": "Cafe",
+    "price_per_person": 550,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "snacks"
+    ],
+    "opening_hours": "08:00-21:00",
+    "distance_from_center_km": 0.5,
+    "tags": [
+      "cafe",
+      "apple_pie",
+      "mountain_view",
+      "cozy",
+      "popular"
+    ]
+  },
+  {
+    "id": "rst_037",
+    "provider": "MockDine",
+    "name": "Drifters Inn",
+    "destination": "Manali",
+    "area": "Old Manali",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 400,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-22:00",
+    "distance_from_center_km": 2.5,
+    "tags": [
+      "backpacker",
+      "riverside",
+      "casual",
+      "budget"
+    ]
+  },
+  {
+    "id": "rst_038",
+    "provider": "MockDine",
+    "name": "Chopsticks Restaurant",
+    "destination": "Manali",
+    "area": "The Mall",
+    "cuisine": "Chinese",
+    "price_per_person": 700,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-22:30",
+    "distance_from_center_km": 0.8,
+    "tags": [
+      "Chinese",
+      "Japanese",
+      "noodles",
+      "cozy"
+    ]
+  },
+  {
+    "id": "rst_039",
+    "provider": "MockDine",
+    "name": "Manu Allaya Resort Restaurant",
+    "destination": "Manali",
+    "area": "Old Manali",
+    "cuisine": "Continental",
+    "price_per_person": 1800,
+    "veg_friendly": true,
+    "rating": 4.6,
+    "meal_types": [
+      "breakfast",
+      "dinner"
+    ],
+    "opening_hours": "07:30-22:00",
+    "distance_from_center_km": 3.0,
+    "tags": [
+      "fine_dining",
+      "mountain_view",
+      "resort",
+      "continental"
+    ]
+  },
+  {
+    "id": "rst_040",
+    "provider": "MockDine",
+    "name": "Cafe 1947",
+    "destination": "Manali",
+    "area": "Old Manali",
+    "cuisine": "Cafe",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.1,
+    "meal_types": [
+      "breakfast",
+      "snacks"
+    ],
+    "opening_hours": "09:00-20:00",
+    "distance_from_center_km": 2.2,
+    "tags": [
+      "cafe",
+      "riverside",
+      "quick_bite",
+      "budget"
+    ]
+  },
+  {
+    "id": "rst_041",
+    "provider": "MockDine",
+    "name": "Le Cafe",
+    "destination": "Pondicherry",
+    "area": "French Quarter",
+    "cuisine": "French",
+    "price_per_person": 800,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "snacks"
+    ],
+    "opening_hours": "08:30-22:00",
+    "distance_from_center_km": 0.2,
+    "tags": [
+      "French",
+      "beachfront",
+      "coffee",
+      "croissants",
+      "colonial"
+    ]
+  },
+  {
+    "id": "rst_042",
+    "provider": "MockDine",
+    "name": "Surguru",
+    "destination": "Pondicherry",
+    "area": "Mission Street",
+    "cuisine": "South Indian",
+    "price_per_person": 200,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch"
+    ],
+    "opening_hours": "07:00-15:30",
+    "distance_from_center_km": 0.8,
+    "tags": [
+      "South_Indian",
+      "thali",
+      "vegetarian",
+      "budget",
+      "authentic"
+    ]
+  },
+  {
+    "id": "rst_043",
+    "provider": "MockDine",
+    "name": "Carte Blanche",
+    "destination": "Pondicherry",
+    "area": "French Quarter",
+    "cuisine": "French-Indian Fusion",
+    "price_per_person": 1500,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-22:30",
+    "distance_from_center_km": 0.4,
+    "tags": [
+      "fusion",
+      "heritage_villa",
+      "romantic",
+      "French_Quarter"
+    ]
+  },
+  {
+    "id": "rst_044",
+    "provider": "MockDine",
+    "name": "Baker Street",
+    "destination": "Pondicherry",
+    "area": "Rue Romain Rolland",
+    "cuisine": "Bakery Cafe",
+    "price_per_person": 400,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "snacks"
+    ],
+    "opening_hours": "08:00-21:00",
+    "distance_from_center_km": 0.6,
+    "tags": [
+      "bakery",
+      "cafe",
+      "French",
+      "breakfast",
+      "croissants"
+    ]
+  },
+  {
+    "id": "rst_045",
+    "provider": "MockDine",
+    "name": "Satsanga",
+    "destination": "Pondicherry",
+    "area": "French Quarter",
+    "cuisine": "Continental",
+    "price_per_person": 1200,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-23:00",
+    "distance_from_center_km": 0.3,
+    "tags": [
+      "expat_favorite",
+      "courtyard",
+      "peaceful",
+      "French_Quarter"
+    ]
+  },
+  {
+    "id": "rst_046",
+    "provider": "MockDine",
+    "name": "Murugan Idli Shop",
+    "destination": "Chennai",
+    "area": "T. Nagar",
+    "cuisine": "South Indian",
+    "price_per_person": 150,
+    "veg_friendly": true,
+    "rating": 4.6,
+    "meal_types": [
+      "breakfast",
+      "lunch"
+    ],
+    "opening_hours": "06:00-23:00",
+    "distance_from_center_km": 7.0,
+    "tags": [
+      "idli",
+      "sambar",
+      "iconic",
+      "budget",
+      "vegetarian",
+      "Tamil"
+    ]
+  },
+  {
+    "id": "rst_047",
+    "provider": "MockDine",
+    "name": "Anjappar Chettinad",
+    "destination": "Chennai",
+    "area": "Anna Salai",
+    "cuisine": "Chettinad",
+    "price_per_person": 650,
+    "veg_friendly": false,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:00-23:00",
+    "distance_from_center_km": 6.0,
+    "tags": [
+      "Chettinad",
+      "spicy",
+      "authentic",
+      "non_veg",
+      "South_Indian"
+    ]
+  },
+  {
+    "id": "rst_048",
+    "provider": "MockDine",
+    "name": "Peshawri Chennai",
+    "destination": "Chennai",
+    "area": "ITC Grand Chola",
+    "cuisine": "North West Frontier",
+    "price_per_person": 3000,
+    "veg_friendly": false,
+    "rating": 4.7,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:30-15:00,19:30-23:00",
+    "distance_from_center_km": 6.5,
+    "tags": [
+      "tandoor",
+      "kebabs",
+      "fine_dining",
+      "North_Indian",
+      "award_winning"
+    ]
+  },
+  {
+    "id": "rst_049",
+    "provider": "MockDine",
+    "name": "Ratna Cafe",
+    "destination": "Chennai",
+    "area": "Triplicane",
+    "cuisine": "South Indian",
+    "price_per_person": 180,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch"
+    ],
+    "opening_hours": "06:30-22:00",
+    "distance_from_center_km": 4.5,
+    "tags": [
+      "heritage",
+      "sambhar",
+      "idli",
+      "vegetarian",
+      "iconic",
+      "budget"
+    ]
+  },
+  {
+    "id": "rst_050",
+    "provider": "MockDine",
+    "name": "Zara Tapas Bar",
+    "destination": "Chennai",
+    "area": "Nungambakkam",
+    "cuisine": "Spanish",
+    "price_per_person": 1800,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "dinner"
+    ],
+    "opening_hours": "18:00-00:00",
+    "distance_from_center_km": 5.8,
+    "tags": [
+      "Spanish",
+      "tapas",
+      "cocktails",
+      "nightlife",
+      "trendy"
+    ]
+  },
+  {
+    "id": "rst_051",
+    "provider": "MockDine",
+    "name": "Peshawri at ITC Mughal",
+    "destination": "Agra",
+    "area": "Fatehabad Road",
+    "cuisine": "North West Frontier",
+    "price_per_person": 2800,
+    "veg_friendly": false,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:30-15:00,19:30-23:00",
+    "distance_from_center_km": 2.0,
+    "tags": [
+      "tandoor",
+      "kebabs",
+      "fine_dining",
+      "North_Indian"
+    ]
+  },
+  {
+    "id": "rst_052",
+    "provider": "MockDine",
+    "name": "Pinch of Spice",
+    "destination": "Agra",
+    "area": "Wazirpura Road",
+    "cuisine": "North Indian",
+    "price_per_person": 700,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:00-23:00",
+    "distance_from_center_km": 2.5,
+    "tags": [
+      "North_Indian",
+      "dal_makhani",
+      "popular",
+      "local_favorite"
+    ]
+  },
+  {
+    "id": "rst_053",
+    "provider": "MockDine",
+    "name": "Esphahan at Trident",
+    "destination": "Agra",
+    "area": "Taj Nagri Phase II",
+    "cuisine": "Mughlai",
+    "price_per_person": 3200,
+    "veg_friendly": true,
+    "rating": 4.7,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:30-14:30,19:30-23:00",
+    "distance_from_center_km": 1.8,
+    "tags": [
+      "fine_dining",
+      "Mughlai",
+      "award_winning",
+      "taj_view",
+      "romantic"
+    ]
+  },
+  {
+    "id": "rst_054",
+    "provider": "MockDine",
+    "name": "Joney's Place",
+    "destination": "Agra",
+    "area": "Sadar Bazaar",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "snacks"
+    ],
+    "opening_hours": "07:30-22:00",
+    "distance_from_center_km": 3.0,
+    "tags": [
+      "backpacker_favorite",
+      "budget",
+      "multicuisine",
+      "casual"
+    ]
+  },
+  {
+    "id": "rst_055",
+    "provider": "MockDine",
+    "name": "Sheroes Hangout Cafe",
+    "destination": "Agra",
+    "area": "Fatehabad Road",
+    "cuisine": "Cafe",
+    "price_per_person": 300,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "snacks"
+    ],
+    "opening_hours": "09:00-20:00",
+    "distance_from_center_km": 1.5,
+    "tags": [
+      "social_enterprise",
+      "cafe",
+      "acid_survivors",
+      "unique",
+      "inspirational"
+    ]
+  },
+  {
+    "id": "rst_056",
+    "provider": "MockDine",
+    "name": "Kashi Chat Bhandar",
+    "destination": "Varanasi",
+    "area": "Godaulia",
+    "cuisine": "Indian Street Food",
+    "price_per_person": 80,
+    "veg_friendly": true,
+    "rating": 4.6,
+    "meal_types": [
+      "snacks"
+    ],
+    "opening_hours": "10:00-22:30",
+    "distance_from_center_km": 0.3,
+    "tags": [
+      "chaat",
+      "street_food",
+      "iconic",
+      "vegetarian",
+      "budget"
+    ]
+  },
+  {
+    "id": "rst_057",
+    "provider": "MockDine",
+    "name": "Brown Bread Bakery",
+    "destination": "Varanasi",
+    "area": "Asi Ghat",
+    "cuisine": "Cafe",
+    "price_per_person": 450,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "snacks"
+    ],
+    "opening_hours": "07:00-21:00",
+    "distance_from_center_km": 1.5,
+    "tags": [
+      "cafe",
+      "organic",
+      "bakery",
+      "social_enterprise",
+      "peaceful"
+    ]
+  },
+  {
+    "id": "rst_058",
+    "provider": "MockDine",
+    "name": "Aum Cafe",
+    "destination": "Varanasi",
+    "area": "Asi Ghat",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 400,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-22:00",
+    "distance_from_center_km": 1.8,
+    "tags": [
+      "ganga_view",
+      "rooftop",
+      "cafe",
+      "backpacker",
+      "relaxing"
+    ]
+  },
+  {
+    "id": "rst_059",
+    "provider": "MockDine",
+    "name": "Dolphin Restaurant",
+    "destination": "Varanasi",
+    "area": "Dashashwamedh Ghat",
+    "cuisine": "North Indian",
+    "price_per_person": 600,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:00-22:30",
+    "distance_from_center_km": 0.2,
+    "tags": [
+      "rooftop",
+      "ghat_view",
+      "North_Indian",
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "rst_060",
+    "provider": "MockDine",
+    "name": "Bati Chokha",
+    "destination": "Varanasi",
+    "area": "Sigra",
+    "cuisine": "Baati Chokha",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-22:00",
+    "distance_from_center_km": 5.0,
+    "tags": [
+      "regional",
+      "UP_cuisine",
+      "dal_bati",
+      "vegetarian",
+      "authentic"
+    ]
+  },
+  {
+    "id": "rst_061",
+    "provider": "MockDine",
+    "name": "Ambrai Restaurant",
+    "destination": "Udaipur",
+    "area": "Amet Haveli, Chandpole",
+    "cuisine": "Rajasthani",
+    "price_per_person": 1800,
+    "veg_friendly": true,
+    "rating": 4.7,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-15:00,19:00-23:00",
+    "distance_from_center_km": 0.3,
+    "tags": [
+      "lake_view",
+      "romantic",
+      "heritage",
+      "Rajasthani",
+      "rooftop"
+    ]
+  },
+  {
+    "id": "rst_062",
+    "provider": "MockDine",
+    "name": "Upre Restaurant",
+    "destination": "Udaipur",
+    "area": "Lake Pichola Hotel",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 2200,
+    "veg_friendly": true,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:30-23:00",
+    "distance_from_center_km": 0.5,
+    "tags": [
+      "lake_view",
+      "rooftop",
+      "fine_dining",
+      "romantic",
+      "sunset"
+    ]
+  },
+  {
+    "id": "rst_063",
+    "provider": "MockDine",
+    "name": "Millets of Mewar",
+    "destination": "Udaipur",
+    "area": "Hanuman Ghat",
+    "cuisine": "Rajasthani Organic",
+    "price_per_person": 450,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-21:30",
+    "distance_from_center_km": 0.8,
+    "tags": [
+      "organic",
+      "vegetarian",
+      "sustainable",
+      "healthy",
+      "local"
+    ]
+  },
+  {
+    "id": "rst_064",
+    "provider": "MockDine",
+    "name": "Natraj Dining Hall",
+    "destination": "Udaipur",
+    "area": "City Station Road",
+    "cuisine": "Rajasthani Thali",
+    "price_per_person": 250,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:00-22:00",
+    "distance_from_center_km": 2.5,
+    "tags": [
+      "thali",
+      "vegetarian",
+      "budget",
+      "local_favorite",
+      "Rajasthani"
+    ]
+  },
+  {
+    "id": "rst_065",
+    "provider": "MockDine",
+    "name": "Savage Garden",
+    "destination": "Udaipur",
+    "area": "Near Chandpole",
+    "cuisine": "Continental",
+    "price_per_person": 900,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "dinner"
+    ],
+    "opening_hours": "18:00-23:00",
+    "distance_from_center_km": 0.4,
+    "tags": [
+      "rooftop",
+      "fort_view",
+      "continental",
+      "romantic",
+      "trendy"
+    ]
+  },
+  {
+    "id": "rst_066",
+    "provider": "MockDine",
+    "name": "Indique Rooftop Restaurant",
+    "destination": "Jodhpur",
+    "area": "Pal Haveli",
+    "cuisine": "Rajasthani",
+    "price_per_person": 1500,
+    "veg_friendly": true,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-23:00",
+    "distance_from_center_km": 0.5,
+    "tags": [
+      "rooftop",
+      "fort_view",
+      "Rajasthani",
+      "romantic",
+      "sunset"
+    ]
+  },
+  {
+    "id": "rst_067",
+    "provider": "MockDine",
+    "name": "Gypsy Restaurant",
+    "destination": "Jodhpur",
+    "area": "Station Road",
+    "cuisine": "North Indian",
+    "price_per_person": 400,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-23:00",
+    "distance_from_center_km": 2.5,
+    "tags": [
+      "North_Indian",
+      "casual",
+      "budget",
+      "local",
+      "popular"
+    ]
+  },
+  {
+    "id": "rst_068",
+    "provider": "MockDine",
+    "name": "Stepwell Cafe",
+    "destination": "Jodhpur",
+    "area": "Navchokiya",
+    "cuisine": "Cafe",
+    "price_per_person": 500,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "snacks"
+    ],
+    "opening_hours": "08:00-21:00",
+    "distance_from_center_km": 0.4,
+    "tags": [
+      "cafe",
+      "blue_city_view",
+      "fort_view",
+      "cozy",
+      "Instagram"
+    ]
+  },
+  {
+    "id": "rst_069",
+    "provider": "MockDine",
+    "name": "On the Rocks",
+    "destination": "Jodhpur",
+    "area": "Ajit Bhawan",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 1200,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:30-23:00",
+    "distance_from_center_km": 3.0,
+    "tags": [
+      "outdoor",
+      "garden",
+      "bar",
+      "multi_cuisine",
+      "relaxing"
+    ]
+  },
+  {
+    "id": "rst_070",
+    "provider": "MockDine",
+    "name": "Jhankar Choti Haveli",
+    "destination": "Jodhpur",
+    "area": "Moti Chowk",
+    "cuisine": "Rajasthani",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:00-22:00",
+    "distance_from_center_km": 0.6,
+    "tags": [
+      "heritage_haveli",
+      "Rajasthani",
+      "thali",
+      "local",
+      "authentic"
+    ]
+  },
+  {
+    "id": "rst_071",
+    "provider": "MockDine",
+    "name": "Glenary's Bakery & Cafe",
+    "destination": "Darjeeling",
+    "area": "Nehru Road",
+    "cuisine": "Continental Bakery",
+    "price_per_person": 600,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "snacks"
+    ],
+    "opening_hours": "08:00-21:00",
+    "distance_from_center_km": 0.3,
+    "tags": [
+      "bakery",
+      "heritage",
+      "colonial",
+      "mountain_view",
+      "iconic"
+    ]
+  },
+  {
+    "id": "rst_072",
+    "provider": "MockDine",
+    "name": "Kunga Restaurant",
+    "destination": "Darjeeling",
+    "area": "Gandhi Road",
+    "cuisine": "Tibetan",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:00-21:00",
+    "distance_from_center_km": 0.8,
+    "tags": [
+      "Tibetan",
+      "momos",
+      "thukpa",
+      "budget",
+      "local_favorite"
+    ]
+  },
+  {
+    "id": "rst_073",
+    "provider": "MockDine",
+    "name": "Sonam's Kitchen",
+    "destination": "Darjeeling",
+    "area": "Dr. Zakir Hussain Road",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 400,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:30-21:30",
+    "distance_from_center_km": 1.5,
+    "tags": [
+      "backpacker",
+      "cozy",
+      "mountain_view",
+      "casual",
+      "friendly"
+    ]
+  },
+  {
+    "id": "rst_074",
+    "provider": "MockDine",
+    "name": "Nathmull's Tea Room",
+    "destination": "Darjeeling",
+    "area": "Laden La Road",
+    "cuisine": "Tea House",
+    "price_per_person": 200,
+    "veg_friendly": true,
+    "rating": 4.6,
+    "meal_types": [
+      "snacks"
+    ],
+    "opening_hours": "09:00-18:00",
+    "distance_from_center_km": 0.5,
+    "tags": [
+      "Darjeeling_tea",
+      "iconic",
+      "heritage",
+      "tea_tasting",
+      "must_visit"
+    ]
+  },
+  {
+    "id": "rst_075",
+    "provider": "MockDine",
+    "name": "Park Restaurant",
+    "destination": "Darjeeling",
+    "area": "The Mall",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 800,
+    "veg_friendly": true,
+    "rating": 4.1,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:00-22:00",
+    "distance_from_center_km": 0.2,
+    "tags": [
+      "heritage",
+      "mountain_view",
+      "family",
+      "multi_cuisine"
+    ]
+  },
+  {
+    "id": "rst_076",
+    "provider": "MockDine",
+    "name": "Indian Coffee House",
+    "destination": "Shimla",
+    "area": "The Mall",
+    "cuisine": "Cafe",
+    "price_per_person": 200,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "snacks"
+    ],
+    "opening_hours": "09:00-19:00",
+    "distance_from_center_km": 0.1,
+    "tags": [
+      "heritage",
+      "iconic",
+      "budget",
+      "colonial",
+      "coffee"
+    ]
+  },
+  {
+    "id": "rst_077",
+    "provider": "MockDine",
+    "name": "Cafe Sol",
+    "destination": "Shimla",
+    "area": "Mall Road",
+    "cuisine": "Continental",
+    "price_per_person": 700,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "09:00-22:00",
+    "distance_from_center_km": 0.2,
+    "tags": [
+      "trendy",
+      "continental",
+      "mountain_view",
+      "cozy",
+      "popular"
+    ]
+  },
+  {
+    "id": "rst_078",
+    "provider": "MockDine",
+    "name": "Baljees Restaurant",
+    "destination": "Shimla",
+    "area": "The Mall",
+    "cuisine": "North Indian",
+    "price_per_person": 500,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-22:00",
+    "distance_from_center_km": 0.3,
+    "tags": [
+      "local_favorite",
+      "heritage",
+      "North_Indian",
+      "family"
+    ]
+  },
+  {
+    "id": "rst_079",
+    "provider": "MockDine",
+    "name": "The Oberoi Cecil Restaurant",
+    "destination": "Shimla",
+    "area": "Chaura Maidan",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 2200,
+    "veg_friendly": true,
+    "rating": 4.6,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:00-23:00",
+    "distance_from_center_km": 1.0,
+    "tags": [
+      "heritage",
+      "fine_dining",
+      "mountain_view",
+      "colonial",
+      "buffet"
+    ]
+  },
+  {
+    "id": "rst_080",
+    "provider": "MockDine",
+    "name": "Wake & Bake Cafe",
+    "destination": "Shimla",
+    "area": "Lakkar Bazaar",
+    "cuisine": "Bakery Cafe",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "snacks"
+    ],
+    "opening_hours": "08:00-20:00",
+    "distance_from_center_km": 0.8,
+    "tags": [
+      "cafe",
+      "bakery",
+      "cozy",
+      "mountain_view",
+      "breakfast_spot"
+    ]
+  },
+  {
+    "id": "rst_081",
+    "provider": "MockDine",
+    "name": "Gesmo Restaurant",
+    "destination": "Leh",
+    "area": "Fort Road",
+    "cuisine": "Tibetan",
+    "price_per_person": 400,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:00-22:00",
+    "distance_from_center_km": 0.5,
+    "tags": [
+      "Tibetan",
+      "momos",
+      "thukpa",
+      "local_favorite",
+      "budget"
+    ]
+  },
+  {
+    "id": "rst_082",
+    "provider": "MockDine",
+    "name": "Bon Appetit",
+    "destination": "Leh",
+    "area": "Changspa Road",
+    "cuisine": "Continental",
+    "price_per_person": 700,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-21:30",
+    "distance_from_center_km": 1.5,
+    "tags": [
+      "garden",
+      "continental",
+      "cozy",
+      "popular",
+      "mountain_view"
+    ]
+  },
+  {
+    "id": "rst_083",
+    "provider": "MockDine",
+    "name": "Lamayuru Restaurant",
+    "destination": "Leh",
+    "area": "Main Bazaar",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 500,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:30-21:00",
+    "distance_from_center_km": 0.3,
+    "tags": [
+      "backpacker",
+      "casual",
+      "multi_cuisine",
+      "budget",
+      "local"
+    ]
+  },
+  {
+    "id": "rst_084",
+    "provider": "MockDine",
+    "name": "Tibetan Kitchen",
+    "destination": "Leh",
+    "area": "Fort Road",
+    "cuisine": "Tibetan",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:00-21:00",
+    "distance_from_center_km": 0.6,
+    "tags": [
+      "Tibetan",
+      "authentic",
+      "local",
+      "budget",
+      "momos"
+    ]
+  },
+  {
+    "id": "rst_085",
+    "provider": "MockDine",
+    "name": "The Grand Dragon Restaurant",
+    "destination": "Leh",
+    "area": "Upper Tukcha",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 1500,
+    "veg_friendly": true,
+    "rating": 4.6,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:00-22:00",
+    "distance_from_center_km": 1.5,
+    "tags": [
+      "fine_dining",
+      "mountain_view",
+      "Ladakhi_cuisine",
+      "buffet",
+      "hotel_restaurant"
+    ]
+  },
+  {
+    "id": "rst_086",
+    "provider": "MockDine",
+    "name": "Mylari Hotel",
+    "destination": "Mysuru",
+    "area": "Nazarbad",
+    "cuisine": "South Indian",
+    "price_per_person": 120,
+    "veg_friendly": true,
+    "rating": 4.7,
+    "meal_types": [
+      "breakfast"
+    ],
+    "opening_hours": "07:00-12:00",
+    "distance_from_center_km": 2.5,
+    "tags": [
+      "dosa",
+      "iconic",
+      "heritage",
+      "vegetarian",
+      "budget",
+      "must_visit"
+    ]
+  },
+  {
+    "id": "rst_087",
+    "provider": "MockDine",
+    "name": "Hotel RRR",
+    "destination": "Mysuru",
+    "area": "Sayyaji Rao Road",
+    "cuisine": "South Indian Thali",
+    "price_per_person": 200,
+    "veg_friendly": false,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch"
+    ],
+    "opening_hours": "11:30-15:30",
+    "distance_from_center_km": 1.0,
+    "tags": [
+      "thali",
+      "non_veg",
+      "South_Indian",
+      "budget",
+      "local_favorite"
+    ]
+  },
+  {
+    "id": "rst_088",
+    "provider": "MockDine",
+    "name": "The Old House",
+    "destination": "Mysuru",
+    "area": "Nazarbad",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 900,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-22:30",
+    "distance_from_center_km": 2.5,
+    "tags": [
+      "heritage_villa",
+      "garden",
+      "cozy",
+      "multi_cuisine",
+      "relaxing"
+    ]
+  },
+  {
+    "id": "rst_089",
+    "provider": "MockDine",
+    "name": "Vinayaka Mylari",
+    "destination": "Mysuru",
+    "area": "JLB Road",
+    "cuisine": "South Indian",
+    "price_per_person": 100,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast"
+    ],
+    "opening_hours": "06:30-11:00",
+    "distance_from_center_km": 1.5,
+    "tags": [
+      "dosa",
+      "idli",
+      "vegetarian",
+      "budget",
+      "iconic",
+      "heritage"
+    ]
+  },
+  {
+    "id": "rst_090",
+    "provider": "MockDine",
+    "name": "Siddhartha Hotel",
+    "destination": "Mysuru",
+    "area": "Guest House Road",
+    "cuisine": "North and South Indian",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:00-23:00",
+    "distance_from_center_km": 1.0,
+    "tags": [
+      "local_favorite",
+      "family",
+      "vegetarian",
+      "AC",
+      "reliable"
+    ]
+  },
+  {
+    "id": "rst_091",
+    "provider": "MockDine",
+    "name": "Kesar Da Dhaba",
+    "destination": "Amritsar",
+    "area": "Shastri Market",
+    "cuisine": "Punjabi",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.7,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "09:00-23:00",
+    "distance_from_center_km": 1.2,
+    "tags": [
+      "Punjabi",
+      "dal_makhani",
+      "iconic",
+      "heritage",
+      "vegetarian",
+      "must_visit"
+    ]
+  },
+  {
+    "id": "rst_092",
+    "provider": "MockDine",
+    "name": "Bharawan Da Dhaba",
+    "destination": "Amritsar",
+    "area": "Town Hall",
+    "cuisine": "Punjabi",
+    "price_per_person": 300,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-23:00",
+    "distance_from_center_km": 0.8,
+    "tags": [
+      "Punjabi",
+      "heritage",
+      "budget",
+      "vegetarian",
+      "local_favorite"
+    ]
+  },
+  {
+    "id": "rst_093",
+    "provider": "MockDine",
+    "name": "Crystal Restaurant",
+    "destination": "Amritsar",
+    "area": "Queens Road",
+    "cuisine": "North Indian",
+    "price_per_person": 700,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-23:30",
+    "distance_from_center_km": 2.5,
+    "tags": [
+      "North_Indian",
+      "family",
+      "AC",
+      "popular",
+      "varied_menu"
+    ]
+  },
+  {
+    "id": "rst_094",
+    "provider": "MockDine",
+    "name": "Brothers' Dhaba",
+    "destination": "Amritsar",
+    "area": "Near Golden Temple",
+    "cuisine": "Punjabi",
+    "price_per_person": 250,
+    "veg_friendly": false,
+    "rating": 4.4,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "10:00-23:00",
+    "distance_from_center_km": 0.4,
+    "tags": [
+      "Punjabi",
+      "non_veg",
+      "budget",
+      "chicken",
+      "local"
+    ]
+  },
+  {
+    "id": "rst_095",
+    "provider": "MockDine",
+    "name": "Langar at Golden Temple",
+    "destination": "Amritsar",
+    "area": "Golden Temple Complex",
+    "cuisine": "Vegetarian Prasad",
+    "price_per_person": 0,
+    "veg_friendly": true,
+    "rating": 4.9,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "00:00-23:59",
+    "distance_from_center_km": 0.0,
+    "tags": [
+      "free",
+      "vegetarian",
+      "spiritual",
+      "community",
+      "unique",
+      "must_experience"
+    ]
+  },
+  {
+    "id": "rst_096",
+    "provider": "MockDine",
+    "name": "Peter Cat",
+    "destination": "Kolkata",
+    "area": "Park Street",
+    "cuisine": "Continental",
+    "price_per_person": 900,
+    "veg_friendly": false,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-23:30",
+    "distance_from_center_km": 2.0,
+    "tags": [
+      "chelo_kebab",
+      "heritage",
+      "Park_Street",
+      "popular",
+      "iconic"
+    ]
+  },
+  {
+    "id": "rst_097",
+    "provider": "MockDine",
+    "name": "Mocambo",
+    "destination": "Kolkata",
+    "area": "Park Street",
+    "cuisine": "Continental",
+    "price_per_person": 800,
+    "veg_friendly": false,
+    "rating": 4.4,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-23:00",
+    "distance_from_center_km": 2.0,
+    "tags": [
+      "heritage",
+      "continental",
+      "devilled_crab",
+      "iconic",
+      "colonial"
+    ]
+  },
+  {
+    "id": "rst_098",
+    "provider": "MockDine",
+    "name": "Oh! Calcutta",
+    "destination": "Kolkata",
+    "area": "Forum Mall, Elgin Road",
+    "cuisine": "Bengali",
+    "price_per_person": 1200,
+    "veg_friendly": false,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-22:30",
+    "distance_from_center_km": 3.5,
+    "tags": [
+      "Bengali",
+      "fine_dining",
+      "hilsa",
+      "award_winning",
+      "must_try"
+    ]
+  },
+  {
+    "id": "rst_099",
+    "provider": "MockDine",
+    "name": "Flurys Tea Room",
+    "destination": "Kolkata",
+    "area": "Park Street",
+    "cuisine": "Patisserie Cafe",
+    "price_per_person": 600,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "snacks"
+    ],
+    "opening_hours": "07:30-21:00",
+    "distance_from_center_km": 2.0,
+    "tags": [
+      "heritage",
+      "colonial",
+      "pastries",
+      "tea",
+      "iconic",
+      "1927"
+    ]
+  },
+  {
+    "id": "rst_100",
+    "provider": "MockDine",
+    "name": "Kewpie's",
+    "destination": "Kolkata",
+    "area": "Elgin Lane",
+    "cuisine": "Bengali Home-style",
+    "price_per_person": 700,
+    "veg_friendly": false,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch"
+    ],
+    "opening_hours": "12:30-14:30",
+    "distance_from_center_km": 3.8,
+    "tags": [
+      "Bengali",
+      "home_style",
+      "thali",
+      "authentic",
+      "heritage"
+    ]
+  },
+  {
+    "id": "rst_101",
+    "provider": "MockDine",
+    "name": "Little Buddha Cafe",
+    "destination": "Rishikesh",
+    "area": "Lakshman Jhula",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 450,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-21:30",
+    "distance_from_center_km": 3.5,
+    "tags": [
+      "ganga_view",
+      "vegetarian",
+      "backpacker",
+      "cafe",
+      "peaceful"
+    ]
+  },
+  {
+    "id": "rst_102",
+    "provider": "MockDine",
+    "name": "Chotiwala Restaurant",
+    "destination": "Rishikesh",
+    "area": "Ram Jhula",
+    "cuisine": "North Indian",
+    "price_per_person": 350,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:00-22:30",
+    "distance_from_center_km": 2.5,
+    "tags": [
+      "iconic",
+      "vegetarian",
+      "thali",
+      "North_Indian",
+      "family"
+    ]
+  },
+  {
+    "id": "rst_103",
+    "provider": "MockDine",
+    "name": "60s Cafe",
+    "destination": "Rishikesh",
+    "area": "Tapovan",
+    "cuisine": "Cafe",
+    "price_per_person": 500,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "snacks"
+    ],
+    "opening_hours": "08:00-21:00",
+    "distance_from_center_km": 3.0,
+    "tags": [
+      "Beatles",
+      "hippie",
+      "cafe",
+      "music",
+      "cozy",
+      "river_view"
+    ]
+  },
+  {
+    "id": "rst_104",
+    "provider": "MockDine",
+    "name": "Ganga Beach Restaurant",
+    "destination": "Rishikesh",
+    "area": "Swarg Ashram",
+    "cuisine": "North Indian",
+    "price_per_person": 400,
+    "veg_friendly": true,
+    "rating": 4.1,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-22:00",
+    "distance_from_center_km": 1.5,
+    "tags": [
+      "ganga_view",
+      "vegetarian",
+      "casual",
+      "budget",
+      "North_Indian"
+    ]
+  },
+  {
+    "id": "rst_105",
+    "provider": "MockDine",
+    "name": "Oasis Restaurant",
+    "destination": "Rishikesh",
+    "area": "Lakshman Jhula",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 600,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-22:00",
+    "distance_from_center_km": 3.5,
+    "tags": [
+      "rooftop",
+      "ganga_view",
+      "multi_cuisine",
+      "vegetarian",
+      "relaxing"
+    ]
+  },
+  {
+    "id": "rst_106",
+    "provider": "MockDine",
+    "name": "Rapsy Restaurant",
+    "destination": "Munnar",
+    "area": "Munnar Town",
+    "cuisine": "Kerala",
+    "price_per_person": 400,
+    "veg_friendly": false,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-22:00",
+    "distance_from_center_km": 0.3,
+    "tags": [
+      "Kerala",
+      "fish_curry",
+      "local_favorite",
+      "authentic",
+      "budget"
+    ]
+  },
+  {
+    "id": "rst_107",
+    "provider": "MockDine",
+    "name": "Copper Kettle",
+    "destination": "Munnar",
+    "area": "Munnar Town",
+    "cuisine": "Continental Cafe",
+    "price_per_person": 600,
+    "veg_friendly": true,
+    "rating": 4.5,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "snacks"
+    ],
+    "opening_hours": "08:00-21:00",
+    "distance_from_center_km": 0.5,
+    "tags": [
+      "cafe",
+      "tea",
+      "mountain_view",
+      "cozy",
+      "popular",
+      "breakfast_spot"
+    ]
+  },
+  {
+    "id": "rst_108",
+    "provider": "MockDine",
+    "name": "Eastend Restaurant",
+    "destination": "Munnar",
+    "area": "KK Road",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 800,
+    "veg_friendly": true,
+    "rating": 4.3,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "07:30-22:00",
+    "distance_from_center_km": 0.8,
+    "tags": [
+      "multi_cuisine",
+      "mountain_view",
+      "family",
+      "reliable"
+    ]
+  },
+  {
+    "id": "rst_109",
+    "provider": "MockDine",
+    "name": "Spice Village Restaurant",
+    "destination": "Munnar",
+    "area": "Thekkady Road",
+    "cuisine": "Kerala",
+    "price_per_person": 2500,
+    "veg_friendly": true,
+    "rating": 4.7,
+    "meal_types": [
+      "breakfast",
+      "dinner"
+    ],
+    "opening_hours": "07:00-10:30,19:00-22:00",
+    "distance_from_center_km": 6.0,
+    "tags": [
+      "eco_resort",
+      "organic",
+      "Kerala",
+      "fine_dining",
+      "spice_garden"
+    ]
+  },
+  {
+    "id": "rst_110",
+    "provider": "MockDine",
+    "name": "Saravana Bhavan Munnar",
+    "destination": "Munnar",
+    "area": "Main Market",
+    "cuisine": "South Indian",
+    "price_per_person": 200,
+    "veg_friendly": true,
+    "rating": 4.1,
+    "meal_types": [
+      "breakfast",
+      "lunch"
+    ],
+    "opening_hours": "07:00-22:00",
+    "distance_from_center_km": 0.2,
+    "tags": [
+      "vegetarian",
+      "South_Indian",
+      "budget",
+      "reliable",
+      "chain"
+    ]
+  },
+  {
+    "id": "rst_111",
+    "provider": "MockDine",
+    "name": "Full Moon Cafe",
+    "destination": "Andaman",
+    "area": "Havelock Island",
+    "cuisine": "Seafood",
+    "price_per_person": 1200,
+    "veg_friendly": false,
+    "rating": 4.5,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "11:00-22:00",
+    "distance_from_center_km": 38.0,
+    "tags": [
+      "seafood",
+      "beachfront",
+      "Havelock",
+      "fish",
+      "relaxing",
+      "sunset"
+    ]
+  },
+  {
+    "id": "rst_112",
+    "provider": "MockDine",
+    "name": "New Lighthouse Restaurant",
+    "destination": "Andaman",
+    "area": "Corbyn's Cove, Port Blair",
+    "cuisine": "Seafood",
+    "price_per_person": 900,
+    "veg_friendly": false,
+    "rating": 4.3,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-22:00",
+    "distance_from_center_km": 5.0,
+    "tags": [
+      "seafood",
+      "sea_view",
+      "local",
+      "fresh_fish",
+      "Port_Blair"
+    ]
+  },
+  {
+    "id": "rst_113",
+    "provider": "MockDine",
+    "name": "Anju Coco Resto",
+    "destination": "Andaman",
+    "area": "Havelock Island",
+    "cuisine": "Multi-cuisine",
+    "price_per_person": 700,
+    "veg_friendly": true,
+    "rating": 4.4,
+    "meal_types": [
+      "breakfast",
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "08:00-22:00",
+    "distance_from_center_km": 40.0,
+    "tags": [
+      "Havelock",
+      "backpacker",
+      "multi_cuisine",
+      "casual",
+      "popular"
+    ]
+  },
+  {
+    "id": "rst_114",
+    "provider": "MockDine",
+    "name": "Ananda Restaurant",
+    "destination": "Andaman",
+    "area": "Port Blair",
+    "cuisine": "South Indian",
+    "price_per_person": 300,
+    "veg_friendly": true,
+    "rating": 4.2,
+    "meal_types": [
+      "breakfast",
+      "lunch"
+    ],
+    "opening_hours": "07:00-15:00",
+    "distance_from_center_km": 2.0,
+    "tags": [
+      "South_Indian",
+      "vegetarian",
+      "budget",
+      "local",
+      "reliable"
+    ]
+  },
+  {
+    "id": "rst_115",
+    "provider": "MockDine",
+    "name": "Barefoot Bar & Grill",
+    "destination": "Andaman",
+    "area": "Havelock Island",
+    "cuisine": "Seafood",
+    "price_per_person": 2000,
+    "veg_friendly": false,
+    "rating": 4.6,
+    "meal_types": [
+      "lunch",
+      "dinner"
+    ],
+    "opening_hours": "12:00-22:00",
+    "distance_from_center_km": 42.0,
+    "tags": [
+      "beach",
+      "bar",
+      "seafood",
+      "sunset",
+      "luxury",
+      "eco_resort"
+    ]
+  }
+]

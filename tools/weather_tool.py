@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import json
+from datetime import datetime, timezone
 from urllib.request import urlopen
 
 from langchain_core.tools import tool
@@ -52,3 +52,4 @@ def get_current_weather(city: str, country_code: str | None = None) -> str:
         f"humidity {current.get('humidity')}%, "
         f"wind {current.get('windspeedKmph')} km/h."
     )
+

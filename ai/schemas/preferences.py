@@ -13,6 +13,23 @@ class TravelPreferences(BaseModel):
     currency: str = "₹"
 
 
+class UserProfile(BaseModel):
+    name: str | None = None
+    email: str | None = None
+
+
+class PastTrip(BaseModel):
+    destination: str
+    duration_days: int
+    travel_style: str
+    accommodation: str
+    transport: list[str] = Field(default_factory=list)
+    budget_per_day_inr: float
+    travel_companions: str
+    pain_points: list[str] = Field(default_factory=list)
+    overall_rating: float
+
+
 class PreferenceContext(BaseModel):
     """Synthesized traveler context produced by the Preference Agent."""
     travel_style: str | None = None

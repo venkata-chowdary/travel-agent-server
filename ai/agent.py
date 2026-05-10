@@ -4,7 +4,7 @@ from typing import Annotated, TypedDict
 
 from dotenv import load_dotenv
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
+from ai.helpers import GeminiClient
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -20,7 +20,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 tools = [get_current_weather]
 
-llm = ChatGoogleGenerativeAI(model=settings.llm_model, temperature=settings.llm_temperature)
+llm = GeminiClient(model=settings.llm_model, temperature=settings.llm_temperature)
 llm_with_tools = llm.bind_tools(tools)
 
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import time
+from statistics import mode
 from urllib.request import urlopen
 
 from langchain_core.tools import tool
@@ -18,9 +20,17 @@ class WeatherToolOutput(BaseModel):
     summary: str = Field(description="One-sentence plain-English summary suitable for travel advice.")
 
 
-def _http_get_json(url: str) -> dict:
-    with urlopen(url, timeout=10) as response:
-        return json.loads(response.read().decode("utf-8"))
+def _http_get_json(url: str, retries: int = 3) -> dict:
+    last_exc: Exception | None = None
+    for attempt in range(retries):
+        try:
+            with urlopen(url, timeout=10) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except Exception as exc:
+            last_exc = exc
+            if attempt < retries - 1:
+                time.sleep(2 ** attempt)  # 1s then 2s before retry
+    raise last_exc  # type: ignore[misc]
 
 
 @tool
@@ -85,3 +95,96 @@ def get_current_weather(city: str) -> dict:
         humidity_pct=humidity_pct, wind_kmph=wind_kmph,
         summary=summary,
     ).model_dump()
+
+
+@tool
+def get_weather_forecast(city: str, trip_dates: list[str]) -> dict:
+    """
+    Fetch a multi-day weather forecast for a travel destination using wttr.in.
+
+    Returns forecast data for up to 3 days. For trips longer than 3 days the
+    response includes forecast_limited=true so callers can note the limitation.
+
+    Args:
+        city: Full city name, e.g. "Goa", "Hyderabad", "Manali".
+        trip_dates: List of date strings in "YYYY-MM-DD" format, one per trip day.
+
+    Returns:
+        dict with keys: city, days (list of day forecasts), forecast_limited (bool).
+        Each day has: date, max_temp_c, min_temp_c, dominant_condition, max_rain_pct.
+    """
+    location = city.strip().replace(" ", "+")
+    url = f"https://wttr.in/{location}?format=j1"
+
+    try:
+        data = _http_get_json(url)
+    except Exception:
+        return {
+            "city": city,
+            "days": [],
+            "forecast_limited": False,
+            "error": f"Weather data unavailable for {city}.",
+        }
+
+    weather_days = data.get("weather") or []
+    nearest_list = data.get("nearest_area") or []
+
+    # wttr.in silently returns empty weather[] for unrecognised city names.
+    # Retry once with "+India" appended — covers most Indian cities.
+    if not weather_days:
+        try:
+            fallback = _http_get_json(f"https://wttr.in/{location}+India?format=j1")
+            weather_days = fallback.get("weather") or []
+            if weather_days:
+                nearest_list = fallback.get("nearest_area") or nearest_list
+        except Exception:
+            pass
+
+    if not weather_days:
+        return {
+            "city": city,
+            "days": [],
+            "forecast_limited": False,
+            "error": (
+                f"No forecast data found for '{city}'. "
+                "Try a nearby larger city or add a state/region name (e.g. 'Gokarna Karnataka')."
+            ),
+        }
+
+    resolved_city = (nearest_list[0].get("areaName") or [{}])[0].get("value", city) if nearest_list else city
+
+    days_out = []
+    for i, trip_date in enumerate(trip_dates):
+        if i >= len(weather_days):
+            break
+        day_data = weather_days[i]
+        hourly = day_data.get("hourly") or []
+
+        max_temp = int(day_data.get("maxtempC", 0))
+        min_temp = int(day_data.get("mintempC", 0))
+
+        conditions = [
+            (h.get("weatherDesc") or [{}])[0].get("value", "")
+            for h in hourly if h.get("weatherDesc")
+        ]
+        try:
+            dominant_condition = mode(conditions) if conditions else "Unknown"
+        except Exception:
+            dominant_condition = conditions[0] if conditions else "Unknown"
+
+        rain_pcts = [int(h.get("chanceofrain", 0)) for h in hourly]
+        max_rain = max(rain_pcts) if rain_pcts else 0
+
+        days_out.append({
+            "date": trip_date,
+            "max_temp_c": max_temp,
+            "min_temp_c": min_temp,
+            "dominant_condition": dominant_condition,
+            "max_rain_pct": max_rain,
+        })
+
+    return {
+        "city": resolved_city,
+        "days": days_out,
+        "forecast_limited": len(trip_dates) > len(weather_days),
+    }

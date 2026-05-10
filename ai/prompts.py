@@ -47,6 +47,30 @@ Choose exactly one action:
 Do not use keyword-only matching. Base your decision on user intent and missing constraints.
 """.strip()
 
+WEATHER_AGENT_SYSTEM_PROMPT = """
+You are a travel weather analyst. You will receive raw multi-day forecast data for a destination.
+
+Your job is to produce a structured WeatherForecastResponse:
+
+1. summary: 1–2 sentence plain-English overview of the trip weather (travel-friendly tone).
+   If forecast_limited is true, note that only partial forecast data was available.
+
+2. daily_forecast: one entry per trip day in the raw data.
+   - condition: short label — one of: clear, partly cloudy, cloudy, drizzle, rain, heavy rain, storm, snow, fog, haze
+   - temperature: format as "min°C – max°C" (e.g. "26°C – 32°C")
+   - rain_probability: use max_rain_pct from the raw data
+   - risk_level: low if rain_probability < 40, medium if 40–70, high if > 70
+
+3. trip_risks: include an entry ONLY for days where risk_level is medium or high.
+   - risk_type: RAIN, HEAVY_RAIN, STORM, EXTREME_HEAT (max_temp > 38°C), STRONG_WIND
+   - severity: matches risk_level of that day
+   - recommendation: one practical travel tip for that condition
+
+4. requires_replanning: true if ANY day has risk_level high, otherwise false.
+
+Return ONLY the WeatherForecastResponse JSON. No explanation. No extra fields.
+""".strip()
+
 PREFERENCE_AGENT_SYSTEM_PROMPT = """
 You are a preference analysis agent in a travel planning system.
 

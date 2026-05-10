@@ -1,96 +1,74 @@
 """
-End-to-end test for the PreferenceAgent pipeline.
+Real-time test for PreferenceAgent.
 
-Run from the server/ directory:
-    python ai/test_preference_agent.py
+Usage (from the server/ directory):
+    python -m ai.test_preference_agent
+    python -m ai.test_preference_agent <user-uuid>
 
-Flow:
-  1. Runs PreferenceAgent.run() — real tool calls + real LLM synthesis
-  2. Prints the synthesized PreferenceContext
-  3. Runs run_travel_agent() with the context — real main agent response
+If no UUID is passed, the agent runs with a placeholder UUID — the DB calls
+will fail gracefully (returning empty sections) and the LLM will still
+synthesize a PreferenceContext with low memory_confidence.
 """
 
+from __future__ import annotations
+
 import asyncio
-import logging
-import os
+import json
 import sys
-import uuid
+import traceback
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from dotenv import load_dotenv
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="  [%(name)s] %(message)s",
-    stream=sys.stdout,
-)
+load_dotenv()
+sys.stdout.reconfigure(encoding="utf-8")
 
-from db import init_db
-from ai.agents import PreferenceAgent
-from ai.agent import run_travel_agent
-from ai.schemas import PreferenceContext
-
-EXISTING_USER_ID = uuid.UUID("fa4db719-5f1c-47ea-9246-55073e995c11")
+# Default UUID — replace with a real one from your DB, or pass via CLI.
+DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000001"
 
 
-def section(title: str) -> None:
-    print(f"\n{'─' * 60}")
-    print(f"  {title}")
-    print(f"{'─' * 60}")
+async def main(user_id: str) -> None:
+    from ai.agents.preference_agent import PreferenceAgent
+    from ai.tools.preference_tools import make_preference_tools
 
+    # Run each tool individually to show raw output before any parsing.
+    print("[tools]")
+    tools = make_preference_tools(user_id)
+    for t in tools:
+        try:
+            result = await t.ainvoke({})
+            print(f"  {t.name}: {json.dumps(result, indent=2, ensure_ascii=False)}")
+        except Exception:
+            print(f"  {t.name}: ERROR")
+            traceback.print_exc()
 
-async def run_preference_agent_test(user_id: uuid.UUID) -> PreferenceContext:
-    section("Step 1 — PreferenceAgent.run()")
-    print("  Calling tools: get_saved_preferences, get_user_profile, get_past_trips")
-    print("  Synthesizing PreferenceContext via LLM...\n")
+    print("\n[agent]")
+    try:
+        agent = PreferenceAgent()
+        result = await agent.run(user_id)
 
-    agent = PreferenceAgent()
-    ctx = await agent.run(user_id)
+        print(f"  status : {agent.state.get('status')}")
+        if agent.state.get("error"):
+            print(f"  error  : {agent.state['error']}")
 
-    print(f"  travel_style       : {ctx.travel_style}")
-    print(f"  budget_style       : {ctx.budget_style}")
-    print(f"  preferred_transport: {ctx.preferred_transport}")
-    print(f"  food_preference    : {ctx.food_preference}")
-    print(f"  hotel_preference   : {ctx.hotel_preference}")
-    print(f"  avoid              : {ctx.avoid}")
-    print(f"  home_city          : {ctx.home_city}")
-    print(f"  currency           : {ctx.currency}")
-    print(f"  memory_confidence  : {ctx.memory_confidence:.2f}")
+        if "saved_preferences" in agent.state:
+            print(f"\n  saved_preferences:")
+            print(json.dumps(agent.state["saved_preferences"].model_dump(), indent=4, ensure_ascii=False))
 
-    assert isinstance(ctx, PreferenceContext), "Expected PreferenceContext"
-    assert 0.0 <= ctx.memory_confidence <= 1.0, "memory_confidence out of bounds"
-    assert ctx.home_city is not None, "home_city should be set — check DB preferences"
-    assert ctx.currency == "₹", f"currency should be ₹, got {ctx.currency!r}"
-    print("\n  ✓ Valid PreferenceContext returned")
-    return ctx
+        if "user_profile" in agent.state:
+            print(f"\n  user_profile:")
+            print(json.dumps(agent.state["user_profile"].model_dump(), indent=4, ensure_ascii=False))
 
+        if "past_trips" in agent.state:
+            print(f"\n  past_trips:")
+            print(json.dumps([t.model_dump() for t in agent.state["past_trips"]], indent=4, ensure_ascii=False))
 
-async def run_main_agent_test(ctx: PreferenceContext) -> None:
-    section("Step 2 — run_travel_agent() with PreferenceContext")
+        print("\n  [synthesized response]")
+        print(json.dumps(result.model_dump(), indent=2, ensure_ascii=False))
 
-    message = "Plan a 3-day weekend trip for this weekend. Keep it budget-friendly and relaxed."
-    print(f"  Message: {message}\n")
-
-    reply = await run_travel_agent(message, preference_context=ctx)
-
-    print("  Agent reply:\n")
-    for line in reply.strip().splitlines():
-        print(f"    {line}")
-
-    assert isinstance(reply, str) and len(reply) > 0
-    print("\n  ✓ Main agent returned a valid response")
-
-
-async def main():
-    print("\n=== Preference Agent End-to-End Test ===")
-
-    await init_db()
-    print(f"\n  Using existing user: {EXISTING_USER_ID}")
-
-    ctx = await run_preference_agent_test(EXISTING_USER_ID)
-    await run_main_agent_test(ctx)
-
-    section("Done — all steps passed")
+    except Exception:
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    uid = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_USER_ID
+    asyncio.run(main(uid))

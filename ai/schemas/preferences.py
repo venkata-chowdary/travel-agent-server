@@ -7,11 +7,10 @@ class TravelPreferences(BaseModel):
     budget_range: Literal["budget", "mid-range", "luxury"] | None = None
     travel_style: list[Literal["adventure", "relaxation", "cultural", "foodie", "family", "solo"]] = Field(default_factory=list)
     dietary_restrictions: list[str] = Field(default_factory=list)
-    cabin_class: Literal["economy", "premium_economy", "business", "first"] | None = None
     accommodation_type: Literal["hotel", "hostel", "airbnb", "resort", "boutique"] | None = None
     pace: Literal["relaxed", "moderate", "packed"] | None = None
     home_city: str | None = None
-    currency: str | None = None  # e.g. "USD", "INR"
+    currency: str = "₹"
 
 
 class PreferenceContext(BaseModel):
@@ -24,4 +23,4 @@ class PreferenceContext(BaseModel):
     avoid: list[str] = Field(default_factory=list)
     memory_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     home_city: str | None = None
-    currency: str | None = None
+    currency: str = "₹"

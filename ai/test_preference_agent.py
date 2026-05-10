@@ -5,11 +5,9 @@ Run from the server/ directory:
     python ai/test_preference_agent.py
 
 Flow:
-  1. Creates a real test user in the DB with rich travel preferences
-  2. Runs PreferenceAgent.run() — real tool calls + real LLM synthesis
-  3. Prints the synthesized PreferenceContext
-  4. Runs run_travel_agent() with the context — real main agent response
-  5. Cleans up the test user from the DB
+  1. Runs PreferenceAgent.run() — real tool calls + real LLM synthesis
+  2. Prints the synthesized PreferenceContext
+  3. Runs run_travel_agent() with the context — real main agent response
 """
 
 import asyncio
@@ -26,65 +24,18 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 
-from sqlalchemy import delete
-
-from auth.models import User
-from auth.security import hash_password
-from db import SessionLocal, init_db
+from db import init_db
 from ai.agents import PreferenceAgent
 from ai.agent import run_travel_agent
 from ai.schemas import PreferenceContext
 
-TEST_USER = {
-    "email": f"test_pref_{uuid.uuid4().hex[:8]}@test.local",
-    "name": "Arjun Reddy",
-    "password_hash": hash_password("TestPass123"),
-    "preferences": {
-        "budget_range": "budget",
-        "travel_style": ["relaxation", "cultural"],
-        "dietary_restrictions": ["vegetarian"],
-        "cabin_class": "economy",
-        "accommodation_type": "hostel",
-        "pace": "relaxed",
-        "home_city": "Hyderabad",
-        "currency": "INR",
-    },
-}
+EXISTING_USER_ID = uuid.UUID("fa4db719-5f1c-47ea-9246-55073e995c11")
 
 
 def section(title: str) -> None:
     print(f"\n{'─' * 60}")
     print(f"  {title}")
     print(f"{'─' * 60}")
-
-
-async def create_test_user() -> uuid.UUID:
-    section("Setup — creating test user in DB")
-    async with SessionLocal() as session:
-        user = User(
-            email=TEST_USER["email"],
-            name=TEST_USER["name"],
-            password_hash=TEST_USER["password_hash"],
-            preferences=TEST_USER["preferences"],
-        )
-        session.add(user)
-        await session.commit()
-        await session.refresh(user)
-        user_id = user.id
-
-    print(f"  Email      : {TEST_USER['email']}")
-    print(f"  Name       : {TEST_USER['name']}")
-    print(f"  User ID    : {user_id}")
-    print(f"  Preferences: {TEST_USER['preferences']}")
-    return user_id
-
-
-async def delete_test_user(user_id: uuid.UUID) -> None:
-    section("Teardown — removing test user")
-    async with SessionLocal() as session:
-        await session.execute(delete(User).where(User.id == user_id))
-        await session.commit()
-    print(f"  Deleted user {user_id}")
 
 
 async def run_preference_agent_test(user_id: uuid.UUID) -> PreferenceContext:
@@ -107,6 +58,8 @@ async def run_preference_agent_test(user_id: uuid.UUID) -> PreferenceContext:
 
     assert isinstance(ctx, PreferenceContext), "Expected PreferenceContext"
     assert 0.0 <= ctx.memory_confidence <= 1.0, "memory_confidence out of bounds"
+    assert ctx.home_city is not None, "home_city should be set — check DB preferences"
+    assert ctx.currency == "₹", f"currency should be ₹, got {ctx.currency!r}"
     print("\n  ✓ Valid PreferenceContext returned")
     return ctx
 
@@ -114,7 +67,7 @@ async def run_preference_agent_test(user_id: uuid.UUID) -> PreferenceContext:
 async def run_main_agent_test(ctx: PreferenceContext) -> None:
     section("Step 2 — run_travel_agent() with PreferenceContext")
 
-    message = "Plan a 3-day weekend trip from Hyderabad. Keep it budget-friendly and relaxed."
+    message = "Plan a 3-day weekend trip for this weekend. Keep it budget-friendly and relaxed."
     print(f"  Message: {message}\n")
 
     reply = await run_travel_agent(message, preference_context=ctx)
@@ -131,13 +84,10 @@ async def main():
     print("\n=== Preference Agent End-to-End Test ===")
 
     await init_db()
-    user_id = await create_test_user()
+    print(f"\n  Using existing user: {EXISTING_USER_ID}")
 
-    try:
-        ctx = await run_preference_agent_test(user_id)
-        await run_main_agent_test(ctx)
-    finally:
-        await delete_test_user(user_id)
+    ctx = await run_preference_agent_test(EXISTING_USER_ID)
+    await run_main_agent_test(ctx)
 
     section("Done — all steps passed")
 

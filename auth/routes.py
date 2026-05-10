@@ -74,7 +74,7 @@ async def update_preferences(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> UserResponse:
     if payload.preferences is not None:
-        current_user.preferences = payload.preferences
+        current_user.preferences = payload.preferences.model_dump()
     if payload.has_seen_preferences_dialog is not None:
         current_user.has_seen_preferences_dialog = payload.has_seen_preferences_dialog
     

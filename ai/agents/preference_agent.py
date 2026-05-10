@@ -37,8 +37,8 @@ class PreferenceAgent:
     def _build_graph(self, tools: list):
         llm_with_tools = self._llm.bind_tools(tools)
 
-        def llm_node(state: _State) -> _State:
-            return {"messages": [llm_with_tools.invoke(state["messages"])]}
+        async def llm_node(state: _State) -> _State:
+            return {"messages": [await llm_with_tools.ainvoke(state["messages"])]}
 
         graph = StateGraph(_State)
         graph.add_node("llm", llm_node)

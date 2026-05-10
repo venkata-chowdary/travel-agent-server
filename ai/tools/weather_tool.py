@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from urllib.request import urlopen
 
 from langchain_core.tools import tool
@@ -25,43 +24,42 @@ def _http_get_json(url: str) -> dict:
 
 
 @tool
-def get_current_date() -> str:
-    """Return the current UTC date and weekday for planning context."""
-    now = datetime.now(timezone.utc)
-    return f"{now.strftime('%Y-%m-%d')} ({now.strftime('%A')}) UTC"
-
-
-@tool
-def get_current_weather(city: str, country_code: str | None = None) -> dict:
+def get_current_weather(city: str) -> dict:
     """
-    Fetch current weather for a location using wttr.in.
+    Fetch current weather for a travel destination using wttr.in.
+
+    Pass the full, unambiguous city name as wttr.in uses it for geolocation —
+    do NOT append country codes (e.g. pass "Gokarna" not "Gokarna,IN").
+    For internationally ambiguous names use the region or state to disambiguate
+    (e.g. "Hospet Karnataka" or "Springfield Illinois").
+    Only call this once per planning response — pick the primary destination.
 
     Args:
-        city: City name (for example: "Bali", "Tokyo", "Hyderabad").
-        country_code: Optional ISO country code like "IN" or "JP".
+        city: Full city name, e.g. "Gokarna", "Hyderabad", "Hospet Karnataka".
 
     Returns:
         WeatherToolOutput fields: city, country, condition, temp_c, feels_like_c,
         humidity_pct, wind_kmph, summary.
     """
-    location = city.strip()
-    if country_code:
-        location = f"{location},{country_code.strip().upper()}"
-
+    location = city.strip().replace(" ", "+")
     weather_url = f"https://wttr.in/{location}?format=j1"
-    weather_data = _http_get_json(weather_url)
+
+    try:
+        weather_data = _http_get_json(weather_url)
+    except Exception:
+        return WeatherToolOutput(
+            city=city, country="", condition="Unavailable",
+            temp_c=0.0, feels_like_c=0.0, humidity_pct=0, wind_kmph=0,
+            summary=f"Weather data is currently unavailable for {city}.",
+        ).model_dump()
+
     current_list = weather_data.get("current_condition") or []
     nearest_list = weather_data.get("nearest_area") or []
 
     if not current_list:
         return WeatherToolOutput(
-            city=city,
-            country="",
-            condition="Unavailable",
-            temp_c=0.0,
-            feels_like_c=0.0,
-            humidity_pct=0,
-            wind_kmph=0,
+            city=city, country="", condition="Unavailable",
+            temp_c=0.0, feels_like_c=0.0, humidity_pct=0, wind_kmph=0,
             summary=f"Weather data is currently unavailable for {city}.",
         ).model_dump()
 
@@ -76,19 +74,14 @@ def get_current_weather(city: str, country_code: str | None = None) -> dict:
     wind_kmph = int(current.get("windspeedKmph", 0))
 
     summary = (
-        f"It is currently {condition.lower()} in {area} with a temperature of "
+        f"It is currently {condition.lower()} in {area}, {country} with a temperature of "
         f"{temp_c}°C (feels like {feels_like_c}°C), "
         f"{humidity_pct}% humidity, and winds at {wind_kmph} km/h."
     )
 
     return WeatherToolOutput(
-        city=area,
-        country=country,
-        condition=condition,
-        temp_c=temp_c,
-        feels_like_c=feels_like_c,
-        humidity_pct=humidity_pct,
-        wind_kmph=wind_kmph,
+        city=area, country=country, condition=condition,
+        temp_c=temp_c, feels_like_c=feels_like_c,
+        humidity_pct=humidity_pct, wind_kmph=wind_kmph,
         summary=summary,
     ).model_dump()
-

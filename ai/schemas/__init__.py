@@ -5,6 +5,7 @@ from .travel import (
     ItineraryDay,
     ItineraryItem,
     TravelAgentStructuredResponse,
+    TravelPlanLLMOutput,
     WeatherNotes,
 )
 from .weather import DailyForecast, TripRisk, WeatherForecastResponse
@@ -17,6 +18,7 @@ __all__ = [
     "ItineraryDay",
     "ItineraryItem",
     "TravelAgentStructuredResponse",
+    "TravelPlanLLMOutput",
     "PastTrip",
     "PreferenceContext",
     "TravelPreferences",

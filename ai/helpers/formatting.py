@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ai.schemas import PreferenceContext, TravelPreferences
+from ai.schemas.weather import WeatherForecastResponse
 
 
 def format_preferences_block(
@@ -48,3 +49,25 @@ def _format_travel_preferences(prefs: TravelPreferences) -> str:
         return ""
     lines = "\n".join(f"  - {k}: {v}" for k, v in set_fields.items())
     return f"\n\nTraveler preferences (use these to personalize your response):\n{lines}"
+
+
+def format_weather_block(forecast: WeatherForecastResponse | None) -> str:
+    if forecast is None or not forecast.daily_forecast:
+        return ""  # no real data — main LLM uses general knowledge
+    lines = [f"\n\n[WEATHER — from WeatherAgent, authoritative. Use exactly as provided:]"]
+    lines.append(f"  Destination: {forecast.destination}")
+    lines.append(f"  Summary: {forecast.summary}")
+    if forecast.requires_replanning:
+        lines.append("  WARNING: Severe weather — recommend replanning or extra preparation.")
+    for day in forecast.daily_forecast:
+        lines.append(
+            f"  {day.date}: {day.condition}, {day.temperature}, "
+            f"rain {day.rain_probability}%, risk={day.risk_level}"
+        )
+    if forecast.trip_risks:
+        lines.append("  Risks:")
+        for risk in forecast.trip_risks:
+            lines.append(
+                f"    Day {risk.day} [{risk.severity}] {risk.risk_type}: {risk.recommendation}"
+            )
+    return "\n".join(lines)

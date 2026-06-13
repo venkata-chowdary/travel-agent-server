@@ -80,7 +80,7 @@ def load_settings() -> Settings:
         jwt_expire_days=_get_positive_int("JWT_EXPIRE_DAYS", default=7, minimum=1),
         bcrypt_rounds=_get_positive_int("BCRYPT_ROUNDS", default=12, minimum=12),
         cors_origins=_split_csv(os.getenv("CORS_ORIGINS", "http://localhost:3000")),
-        llm_model=os.getenv("LLM_MODEL", "gemini-3-flash-preview").strip() or "gemini-3-flash-preview",
+        llm_model="gemini-3-flash-preview",
         llm_temperature=_get_non_negative_float("LLM_TEMPERATURE", default=0.0),
     )
 

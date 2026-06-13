@@ -8,8 +8,8 @@ from auth.middleware import AuthContextMiddleware
 from auth.routes import router as auth_router
 from config import settings
 from db import close_db, init_db
-from mock_apis.routes import router as mock_router
-from routes.agent import router as agent_router
+# from mock_apis.routes import router as mock_router
+# from routes.agent import router as agent_router
 
 
 logging.basicConfig(
@@ -40,8 +40,8 @@ app.add_middleware(
 app.add_middleware(AuthContextMiddleware)
 
 app.include_router(auth_router)
-app.include_router(mock_router)
-app.include_router(agent_router)
+# app.include_router(mock_router)
+# app.include_router(agent_router)
 
 
 @app.get("/")

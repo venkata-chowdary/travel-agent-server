@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from typing import TypedDict
 from uuid import UUID
@@ -17,6 +18,8 @@ from config import settings
 
 load_dotenv()
 sys.stdout.reconfigure(encoding="utf-8")
+
+logger = logging.getLogger("travel_agent.preference")
 
 
 class PreferenceAgentState(TypedDict, total=False):
@@ -54,6 +57,7 @@ class PreferenceAgent:
 
             for t in tools:
                 try:
+                    logger.info("preference_agent | fetching tool=%s", t.name)
                     raw = await t.ainvoke({})
 
                     if t.name == "get_saved_preferences":
@@ -71,12 +75,16 @@ class PreferenceAgent:
                         self.state["past_trips"] = parsed
                         sections.append(f"[past_trips]\n{json.dumps([p.model_dump() for p in parsed], indent=2)}")
 
-                except Exception:
+                    logger.info("preference_agent | tool=%s ok", t.name)
+
+                except Exception as e:
+                    logger.warning("preference_agent | tool=%s failed: %s", t.name, e)
                     sections.append(f"[{t.name}]\n(unavailable)")
 
             self.state["status"] = "fetched"
             tool_data = "\n\n".join(sections)
 
+            logger.info("preference_agent | synthesising context via LLM")
             result = await self._llm.with_structured_output(PreferenceContext, method="json_schema").ainvoke([
                 HumanMessage(content=(
                     f"{PREFERENCE_AGENT_SYSTEM_PROMPT}\n\n"
@@ -86,9 +94,14 @@ class PreferenceAgent:
             ])
             self.state["response"] = result
             self.state["status"] = "synthesized"
+            logger.info(
+                "preference_agent | done | home_city=%s budget=%s",
+                result.home_city, result.budget_style,
+            )
             return result
 
-        except Exception:
+        except Exception as e:
             self.state["status"] = "error"
             self.state["error"] = "Preference synthesis failed."
+            logger.error("preference_agent | synthesis failed: %s", e)
             return PreferenceContext()

@@ -1,3 +1,4 @@
+import logging
 import sys
 from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, TypedDict
@@ -18,6 +19,8 @@ from config import settings
 
 load_dotenv()
 sys.stdout.reconfigure(encoding="utf-8")
+
+logger = logging.getLogger("travel_agent.graph")
 
 _llm = GeminiClient(model=settings.llm_model, temperature=0)
 
@@ -49,16 +52,23 @@ class TravelState(TypedDict):
 # ── Nodes ────────────────────────────────────────────────────────────────────
 
 async def preference_node(state: TravelState) -> dict:
+    logger.info("preference_node | start | user=%s", state["user_id"])
     ctx = await PreferenceAgent().run(user_id=state["user_id"])
+    logger.info("preference_node | done | home_city=%s style=%s", ctx.home_city, ctx.travel_style)
     return {"preference_context": ctx}
 
 
 async def supervisor_node(state: TravelState) -> dict:
+    logger.info("supervisor_node | start")
     today = datetime.now(timezone.utc).strftime("%A, %Y-%m-%d")
     routing = await _llm.with_structured_output(RoutingDecision, method="json_schema").ainvoke([
         SystemMessage(content=f"{SUPERVISOR_ROUTING_PROMPT}\n\nToday is {today}."),
         HumanMessage(content=state["user_message"]),
     ])
+    logger.info(
+        "supervisor_node | needs_weather=%s destination=%s days=%d",
+        routing.needs_weather, routing.destination, routing.trip_duration_days,
+    )
     return {"routing": routing}
 
 
@@ -69,11 +79,14 @@ async def weather_node(state: TravelState) -> dict:
         (today + timedelta(days=i)).strftime("%Y-%m-%d")
         for i in range(routing.trip_duration_days or 3)
     ]
+    logger.info("weather_node | start | destination=%s dates=%s", routing.destination, trip_dates)
     forecast = await WeatherAgent().run(destination=routing.destination, trip_dates=trip_dates)
+    logger.info("weather_node | done | summary=%s", forecast.summary[:100])
     return {"weather_forecast": forecast}
 
 
 async def main_llm_node(state: TravelState) -> dict:
+    logger.info("main_llm_node | start | generating trip plan")
     date_line = f"\nToday is {datetime.now(timezone.utc).strftime('%A, %Y-%m-%d')} (UTC)."
     system_prompt = (
         MAIN_TRAVEL_AGENT_SYSTEM_PROMPT
@@ -107,6 +120,10 @@ async def main_llm_node(state: TravelState) -> dict:
     if updates:
         result = result.model_copy(update=updates)
 
+    logger.info(
+        "main_llm_node | done | destination=%s days=%d budget=%s",
+        result.destination, result.days, result.budget.total,
+    )
     return {"structured_response": result}
 
 

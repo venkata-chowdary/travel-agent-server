@@ -1,4 +1,6 @@
+import sys
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -24,10 +26,11 @@ async def signup(
     payload: SignupRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> AuthResponse:
-    # Check if duplicate email
+    print(f"[auth] Signup attempt for {payload.email}", file=sys.stderr, flush=True)
     result = await session.execute(select(User).where(User.email == payload.email))
     existing_user = result.scalars().first()
     if existing_user:
+        print(f"[auth] Signup failed — email already exists: {payload.email}", file=sys.stderr, flush=True)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="email already exists",
@@ -42,6 +45,7 @@ async def signup(
     await session.commit()
     await session.refresh(new_user)
 
+    print(f"[auth] New user created: {payload.email} (id={new_user.id})", file=sys.stderr, flush=True)
     access_token = create_access_token(user_id=new_user.id)
     return build_auth_response(new_user, access_token)
 
@@ -50,16 +54,19 @@ async def login(
     payload: LoginRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> AuthResponse:
+    print(f"[auth] Login attempt for {payload.email}", file=sys.stderr, flush=True)
     result = await session.execute(select(User).where(User.email == payload.email))
     user = result.scalars().first()
 
     if not user or not verify_password(payload.password, user.password_hash):
+        print(f"[auth] Login failed — invalid credentials for {payload.email}", file=sys.stderr, flush=True)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    print(f"[auth] Login successful for {payload.email} (id={user.id})", file=sys.stderr, flush=True)
     access_token = create_access_token(user_id=user.id)
     return build_auth_response(user, access_token)
 
@@ -77,8 +84,9 @@ async def update_preferences(
         current_user.preferences = payload.preferences.model_dump()
     if payload.has_seen_preferences_dialog is not None:
         current_user.has_seen_preferences_dialog = payload.has_seen_preferences_dialog
-    
+
     session.add(current_user)
     await session.commit()
     await session.refresh(current_user)
+    print(f"[auth] Preferences updated for user {current_user.id}", file=sys.stderr, flush=True)
     return UserResponse.model_validate(current_user)

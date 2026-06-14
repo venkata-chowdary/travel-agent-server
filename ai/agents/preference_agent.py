@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import sys
 from typing import TypedDict
 from uuid import UUID
@@ -18,9 +17,6 @@ from config import settings
 
 load_dotenv()
 sys.stdout.reconfigure(encoding="utf-8")
-
-logger = logging.getLogger("travel_agent.preference")
-
 
 class PreferenceAgentState(TypedDict, total=False):
     status: str                          # "idle" | "fetched" | "synthesized" | "error"
@@ -57,7 +53,7 @@ class PreferenceAgent:
 
             for t in tools:
                 try:
-                    logger.info("preference_agent | fetching tool=%s", t.name)
+                    print(f"[preference] Calling tool: {t.name}", file=sys.stderr, flush=True)
                     raw = await t.ainvoke({})
 
                     if t.name == "get_saved_preferences":
@@ -75,16 +71,16 @@ class PreferenceAgent:
                         self.state["past_trips"] = parsed
                         sections.append(f"[past_trips]\n{json.dumps([p.model_dump() for p in parsed], indent=2)}")
 
-                    logger.info("preference_agent | tool=%s ok", t.name)
+                    print(f"[preference] Tool {t.name} succeeded", file=sys.stderr, flush=True)
 
                 except Exception as e:
-                    logger.warning("preference_agent | tool=%s failed: %s", t.name, e)
+                    print(f"[preference] Tool {t.name} failed: {e}", file=sys.stderr, flush=True)
                     sections.append(f"[{t.name}]\n(unavailable)")
 
             self.state["status"] = "fetched"
             tool_data = "\n\n".join(sections)
 
-            logger.info("preference_agent | synthesising context via LLM")
+            print("[preference] Synthesising traveler context via LLM...", file=sys.stderr, flush=True)
             result = await self._llm.with_structured_output(PreferenceContext, method="json_schema").ainvoke([
                 HumanMessage(content=(
                     f"{PREFERENCE_AGENT_SYSTEM_PROMPT}\n\n"
@@ -94,14 +90,11 @@ class PreferenceAgent:
             ])
             self.state["response"] = result
             self.state["status"] = "synthesized"
-            logger.info(
-                "preference_agent | done | home_city=%s budget=%s",
-                result.home_city, result.budget_style,
-            )
+            print(f"[preference] Context ready — home city: {result.home_city}, budget style: {result.budget_style}", file=sys.stderr, flush=True)
             return result
 
         except Exception as e:
             self.state["status"] = "error"
             self.state["error"] = "Preference synthesis failed."
-            logger.error("preference_agent | synthesis failed: %s", e)
+            print(f"[preference] ERROR — failed to synthesise traveler context: {e}", file=sys.stderr, flush=True)
             return PreferenceContext()

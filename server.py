@@ -1,4 +1,4 @@
-import logging
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,20 +8,20 @@ from auth.middleware import AuthContextMiddleware
 from auth.routes import router as auth_router
 from config import settings
 from db import close_db, init_db
-# from mock_apis.routes import router as mock_router
-# from routes.agent import router as agent_router
+from routes.agent import router as agent_router
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(name)s] %(message)s",
-)
+def log(msg: str) -> None:
+    print(msg, file=sys.stderr, flush=True)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    log("[server] Starting up...")
     await init_db()
+    log("[server] Database ready — http://127.0.0.1:8000")
     yield
+    log("[server] Shutting down")
     await close_db()
 
 
@@ -40,12 +40,13 @@ app.add_middleware(
 app.add_middleware(AuthContextMiddleware)
 
 app.include_router(auth_router)
-# app.include_router(mock_router)
-# app.include_router(agent_router)
+app.include_router(agent_router)
 
 
 @app.get("/")
 async def read_root() -> dict[str, str]:
+    print("hello")
+    log("[server] GET / hit")
     return {
         "status": "ok",
         "service": "autonomous-travel-companion-api",

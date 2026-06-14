@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import sys
 from typing import TypedDict
 
@@ -16,9 +15,6 @@ from config import settings
 
 load_dotenv()
 sys.stdout.reconfigure(encoding="utf-8")
-
-logger = logging.getLogger("travel_agent.weather")
-
 
 class WeatherAgentState(TypedDict, total=False):
     status: str                        # "idle" | "fetched" | "synthesized" | "unavailable" | "error"
@@ -56,17 +52,17 @@ class WeatherAgent:
     async def run(self, destination: str, trip_dates: list[str]) -> WeatherForecastResponse:
         self.state = {"status": "idle", "destination": destination, "trip_dates": trip_dates}
 
-        logger.info("weather_agent | fetching | city=%s dates=%s", destination, trip_dates)
+        print(f"[weather] Fetching weather for {destination} ({trip_dates})", file=sys.stderr, flush=True)
         raw = get_weather_forecast.invoke({"city": destination, "trip_dates": trip_dates})
 
         if not raw.get("days"):
             reason = raw.get("error", "No forecast data returned.")
-            logger.warning("weather_agent | no forecast | reason=%s", reason)
+            print(f"[weather] No forecast available: {reason}", file=sys.stderr, flush=True)
             self.state["status"] = "unavailable"
             self.state["error"] = reason
             return self._unavailable(destination, reason)
 
-        logger.info("weather_agent | fetched | %d day(s)", len(raw["days"]))
+        print(f"[weather] Got {len(raw['days'])} day(s) of forecast data", file=sys.stderr, flush=True)
         self.state["raw_forecast"] = raw
         self.state["status"] = "fetched"
 
@@ -74,7 +70,7 @@ class WeatherAgent:
         dates_str = ", ".join(trip_dates)
 
         try:
-            logger.info("weather_agent | synthesising via LLM")
+            print("[weather] Synthesising weather risks via LLM...", file=sys.stderr, flush=True)
             result = await self._llm.with_structured_output(WeatherForecastResponse, method="json_schema").ainvoke([
                 HumanMessage(content=(
                     f"{WEATHER_AGENT_SYSTEM_PROMPT}\n\n"
@@ -85,10 +81,10 @@ class WeatherAgent:
             ])
             self.state["response"] = result
             self.state["status"] = "synthesized"
-            logger.info("weather_agent | done | status=synthesized")
+            print("[weather] Weather analysis complete", file=sys.stderr, flush=True)
             return result
         except Exception as e:
             self.state["status"] = "error"
             self.state["error"] = "Structured synthesis failed."
-            logger.error("weather_agent | synthesis failed: %s", e)
+            print(f"[weather] ERROR — failed to synthesise weather data: {e}", file=sys.stderr, flush=True)
             return self._unavailable(destination, "Structured synthesis failed.")

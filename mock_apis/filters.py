@@ -34,7 +34,3 @@ def filter_by_field(items: list[dict], field: str, value: str) -> list[dict]:
 
 def filter_by_bool(items: list[dict], field: str, value: bool) -> list[dict]:
     return [i for i in items if bool(i.get(field)) is value]
-
-
-def filter_by_max_value(items: list[dict], field: str, max_val: float) -> list[dict]:
-    return [i for i in items if i.get(field, float("inf")) <= max_val]

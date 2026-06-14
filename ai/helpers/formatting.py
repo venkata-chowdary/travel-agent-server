@@ -38,7 +38,6 @@ def _format_travel_preferences(prefs: TravelPreferences) -> str:
         "Budget range": prefs.budget_range,
         "Travel style": ", ".join(prefs.travel_style) if prefs.travel_style else None,
         "Dietary restrictions": ", ".join(prefs.dietary_restrictions) if prefs.dietary_restrictions else None,
-        "Cabin class": prefs.cabin_class,
         "Accommodation": prefs.accommodation_type,
         "Trip pace": prefs.pace,
         "Home city": prefs.home_city,

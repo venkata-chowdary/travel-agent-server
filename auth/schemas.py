@@ -26,16 +26,6 @@ def _validate_password(value: str) -> str:
     return value
 
 
-def _validate_login_password(value: str) -> str:
-    if len(value.encode("utf-8")) > 72:
-        raise ValueError("Password must be 72 bytes or fewer.")
-
-    if not value:
-        raise ValueError("Password is required.")
-
-    return value
-
-
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=72)
@@ -68,11 +58,6 @@ class LoginRequest(BaseModel):
     @classmethod
     def normalize_email(cls, value: EmailStr) -> str:
         return _normalize_email(value)
-
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, value: str) -> str:
-        return _validate_login_password(value)
 
 
 class UserResponse(BaseModel):

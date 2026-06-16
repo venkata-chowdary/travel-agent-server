@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Literal, TypedDict
 
 from dotenv import load_dotenv
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
@@ -15,7 +15,7 @@ from ai.agents.preference_agent import build_preference_executor
 from ai.agents.weather_agent import build_weather_executor, _unavailable_forecast
 from ai.helpers import GeminiClient, format_preferences_block, format_weather_block
 from ai.prompts import MAIN_TRAVEL_AGENT_SYSTEM_PROMPT, SUPERVISOR_PROMPT
-from ai.schemas import PreferenceContext, TravelAgentStructuredResponse, WeatherForecastResponse
+from ai.schemas import PreferenceContext, TravelAgentChatResponse, TravelAgentStructuredResponse, WeatherForecastResponse
 from ai.schemas.travel import TravelPlanLLMOutput
 from config import settings
 
@@ -30,16 +30,24 @@ _llm = GeminiClient(model=settings.llm_model, temperature=0)
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class SupervisorDecision(BaseModel):
-    next: Literal["preference_agent", "weather_agent", "planner"] = Field(
+    next: Literal["preference_agent", "clarifier", "weather_agent", "planner"] = Field(
         description="Which agent to invoke next."
     )
     destination: str | None = Field(
         default=None,
-        description="Destination city extracted from the user message. Null if not mentioned.",
+        description="Destination city extracted from the conversation. Null if not mentioned.",
     )
-    trip_duration_days: int = Field(
-        default=3,
-        description="Number of trip days parsed from the message. Default 3.",
+    trip_duration_days: int | None = Field(
+        default=None,
+        description="Number of trip days parsed from the conversation. Null if not mentioned.",
+    )
+    trip_start_date: str | None = Field(
+        default=None,
+        description=(
+            "ISO date (YYYY-MM-DD) of the first day of the trip, resolved from today's date. "
+            "Examples: 'this weekend' → next Saturday, 'next Monday' → the coming Monday, "
+            "'from the 15th' → nearest future 15th of any month. Null if no start date is mentioned."
+        ),
     )
 
 
@@ -49,7 +57,10 @@ class TravelState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     next: str
     destination: str | None
-    trip_duration_days: int
+    trip_duration_days: int | None
+    trip_start_date: str | None
+    clarification_checked: bool
+    clarification_response: TravelAgentChatResponse | None
     preference_context: PreferenceContext | None
     weather_forecast: WeatherForecastResponse | None
     structured_response: TravelAgentStructuredResponse | None
@@ -72,13 +83,49 @@ def _state_summary(state: TravelState) -> list[BaseMessage]:
     else:
         lines.append("- weather_forecast: N/A (no destination mentioned)")
 
+    if state.get("clarification_checked"):
+        lines.append("- clarification: checked")
+    else:
+        lines.append("- clarification: NOT YET checked")
+
     return [SystemMessage(content="Current state:\n" + "\n".join(lines))]
 
 
 def _trip_dates(state: TravelState) -> list[str]:
     days = state.get("trip_duration_days") or 3
-    today = date.today()
-    return [(today + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
+    start_str = state.get("trip_start_date")
+    try:
+        start = date.fromisoformat(start_str) if start_str else date.today()
+    except ValueError:
+        start = date.today()
+    return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
+
+
+def _clarification_response(state: TravelState) -> TravelAgentChatResponse | None:
+    questions: list[str] = []
+
+    if not state.get("destination"):
+        questions.append("Where do you want to go, or what kind of place are you in the mood for?")
+
+    if state.get("trip_duration_days") is None:
+        questions.append("How many days, or which dates, should I plan around?")
+
+    if not questions:
+        return None
+
+    limited_questions = questions[:2]
+    if len(limited_questions) == 1:
+        assistant_message = f"Nice, I can plan that. Quick question first: {limited_questions[0]}"
+    else:
+        assistant_message = "Nice, I can shape this into a proper trip. A couple details first:\n" + "\n".join(
+            f"- {question}" for question in limited_questions
+        )
+
+    return TravelAgentChatResponse(
+        response_type="clarification",
+        assistant_message=assistant_message,
+        questions=limited_questions,
+    )
 
 
 # ── Nodes ────────────────────────────────────────────────────────────────────
@@ -86,19 +133,32 @@ def _trip_dates(state: TravelState) -> list[str]:
 async def supervisor_node(state: TravelState) -> dict:
     logger.info("Supervisor running — deciding next step")
     today = datetime.now(timezone.utc).strftime("%A, %Y-%m-%d")
+
+    # Only pass history on the first run when we still need to extract destination/duration.
+    # Subsequent runs (after preference_agent / weather_agent) are pure routing — _state_summary
+    # already carries what was collected, no need to re-send raw history.
+    needs_extraction = not state.get("destination") or state.get("trip_duration_days") is None
+    history_messages = (state.get("messages") or []) if needs_extraction else []
+
     decision: SupervisorDecision = await _llm.with_structured_output(
         SupervisorDecision, method="json_schema"
     ).ainvoke([
         SystemMessage(content=f"{SUPERVISOR_PROMPT}\n\nToday is {today}."),
+        *history_messages,
         HumanMessage(content=state["user_message"]),
         *_state_summary(state),
     ])
     logger.info("Supervisor → %s (destination: %s, days: %s)",
                 decision.next, decision.destination, decision.trip_duration_days)
+    next_step = decision.next
+    if state.get("preference_context") and not state.get("clarification_checked"):
+        next_step = "clarifier"
+
     return {
-        "next": decision.next,
+        "next": next_step,
         "destination": decision.destination or state.get("destination"),
-        "trip_duration_days": decision.trip_duration_days or state.get("trip_duration_days") or 3,
+        "trip_duration_days": decision.trip_duration_days or state.get("trip_duration_days"),
+        "trip_start_date": decision.trip_start_date or state.get("trip_start_date"),
     }
 
 
@@ -115,6 +175,20 @@ async def preference_agent_node(state: TravelState) -> dict:
     except Exception:
         logger.error("PreferenceAgent failed", exc_info=True)
         return {"preference_context": PreferenceContext()}
+
+
+async def clarifier_node(state: TravelState) -> dict:
+    logger.info("Clarifier checking whether enough trip detail exists")
+    clarification = _clarification_response(state)
+    if clarification:
+        logger.info("Clarifier asking %s question(s)", len(clarification.questions))
+        return {
+            "clarification_checked": True,
+            "clarification_response": clarification,
+        }
+
+    logger.info("Clarifier passed; enough detail to plan")
+    return {"clarification_checked": True}
 
 
 async def weather_agent_node(state: TravelState) -> dict:
@@ -178,20 +252,30 @@ def _route(state: TravelState) -> str:
     return state["next"]
 
 
+def _route_after_clarifier(state: TravelState) -> str:
+    return END if state.get("clarification_response") else "supervisor"
+
+
 # ── Graph ────────────────────────────────────────────────────────────────────
 
 graph = StateGraph(TravelState)
 
 graph.add_node("supervisor", supervisor_node)
 graph.add_node("preference_agent", preference_agent_node)
+graph.add_node("clarifier", clarifier_node)
 graph.add_node("weather_agent", weather_agent_node)
 graph.add_node("planner", planner_node)
 
 graph.add_edge(START, "supervisor")
-graph.add_edge("preference_agent", "supervisor")   # loop back → supervisor decides next
-graph.add_edge("weather_agent", "supervisor")      # loop back → supervisor decides next
+graph.add_conditional_edges("clarifier", _route_after_clarifier, {
+    END: END,
+    "supervisor": "supervisor",
+})
+graph.add_edge("preference_agent", "supervisor")
+graph.add_edge("weather_agent", "supervisor")
 graph.add_conditional_edges("supervisor", _route, {
     "preference_agent": "preference_agent",
+    "clarifier": "clarifier",
     "weather_agent": "weather_agent",
     "planner": "planner",
 })
@@ -206,16 +290,31 @@ async def run_travel_agent(
     user_id: str,
     user_message: str,
     history: list[BaseMessage] | None = None,
-) -> TravelAgentStructuredResponse:
+) -> TravelAgentChatResponse:
+    is_followup = any(isinstance(m, AIMessage) for m in (history or []))
+
     result = await agent.ainvoke({
         "user_id": user_id,
         "user_message": user_message,
         "messages": history or [],
         "next": "",
         "destination": None,
-        "trip_duration_days": 3,
-        "preference_context": None,
+        "trip_duration_days": None,
+        "trip_start_date": None,
+        "clarification_checked": False,
+        "clarification_response": None,
+        "preference_context": PreferenceContext() if is_followup else None,
         "weather_forecast": None,
         "structured_response": None,
     })
-    return result["structured_response"]
+    if result.get("clarification_response"):
+        return result["clarification_response"]
+
+    trip_plan = result["structured_response"]
+    return TravelAgentChatResponse(
+        response_type="trip_plan",
+        assistant_message=(
+            f"Here's an idea for your {trip_plan.days}-day trip to {trip_plan.destination}."
+        ),
+        trip_plan=trip_plan,
+    )

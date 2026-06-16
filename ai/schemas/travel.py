@@ -79,3 +79,10 @@ class TravelAgentStructuredResponse(BaseModel):
     trip_risks: list[TripRisk] = Field(default_factory=list)
     requires_replanning: bool = False
     weather_summary: str | None = None
+
+
+class TravelAgentChatResponse(BaseModel):
+    response_type: Literal["clarification", "trip_plan"]
+    assistant_message: str
+    questions: list[str] = Field(default_factory=list)
+    trip_plan: TravelAgentStructuredResponse | None = None

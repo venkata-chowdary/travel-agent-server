@@ -35,6 +35,19 @@ async def main():
         await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_trips_user_id ON trips(user_id);"))
         await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_trips_status ON trips(status);"))
         await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_trips_created_at ON trips(created_at);"))
+        print("Running migration to add chat_messages table...")
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                session_id VARCHAR(64) NOT NULL,
+                user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                role VARCHAR(16) NOT NULL,
+                content TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        """))
+        await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_messages_session_id ON chat_messages(session_id);"))
+        await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_chat_messages_user_id ON chat_messages(user_id);"))
         print("Migration complete!")
 
 if __name__ == "__main__":

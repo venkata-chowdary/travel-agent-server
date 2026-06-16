@@ -9,7 +9,7 @@ os.environ.setdefault("JWT_SECRET_KEY", "x" * 32)
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from ai.schemas import TravelAgentStructuredResponse
+from ai.schemas import TravelAgentChatResponse, TravelAgentStructuredResponse
 from auth.dependencies import get_current_user
 from db import get_db_session
 from routes.agent import router as agent_router
@@ -155,6 +155,9 @@ def test_list_create_detail_and_delete_trips(monkeypatch):
     assert missing_delete.status_code == 404
 
 
+TEST_SESSION_ID = "test-session-00000000"
+
+
 def test_agent_chat_persists_generated_plan(monkeypatch):
     saved = {}
     plan = TravelAgentStructuredResponse(
@@ -187,10 +190,20 @@ def test_agent_chat_persists_generated_plan(monkeypatch):
         },
     )
 
-    async def fake_run_travel_agent(user_id, message):
+    async def fake_run_travel_agent(user_id, message, history=None):
         assert user_id == USER_ID
         assert message == "Plan Tokyo"
-        return plan
+        return TravelAgentChatResponse(
+            response_type="trip_plan",
+            assistant_message="Here's a Tokyo plan.",
+            trip_plan=plan,
+        )
+
+    async def fake_load_chat_history(session, session_id):
+        return []
+
+    async def fake_save_chat_turn(session, session_id, user_id, user_content, assistant_content):
+        pass
 
     async def fake_create_trip(session, user_id, payload):
         saved["user_id"] = user_id
@@ -198,12 +211,48 @@ def test_agent_chat_persists_generated_plan(monkeypatch):
         return make_trip(id=UUID(payload.id), destination=payload.destination)
 
     monkeypatch.setattr(agent_routes, "run_travel_agent", fake_run_travel_agent)
+    monkeypatch.setattr(agent_routes, "load_chat_history", fake_load_chat_history)
+    monkeypatch.setattr(agent_routes, "save_chat_turn", fake_save_chat_turn)
     monkeypatch.setattr(agent_routes, "create_trip", fake_create_trip)
 
     client = TestClient(make_app())
-    response = client.post("/api/agent/chat", json={"message": "Plan Tokyo"})
+    response = client.post("/api/agent/chat", json={"message": "Plan Tokyo", "session_id": TEST_SESSION_ID})
 
     assert response.status_code == 200
+    assert response.json()["response_type"] == "trip_plan"
     assert response.json()["trip_plan"]["destination"] == "Tokyo"
     assert saved["user_id"] == USER_ID
     assert saved["payload"] == plan
+
+
+def test_agent_chat_clarification_does_not_persist(monkeypatch):
+    async def fake_run_travel_agent(user_id, message, history=None):
+        assert user_id == USER_ID
+        assert message == "Plan a trip"
+        return TravelAgentChatResponse(
+            response_type="clarification",
+            assistant_message="Nice, I can plan that. Where do you want to go?",
+            questions=["Where do you want to go?"],
+        )
+
+    async def fake_load_chat_history(session, session_id):
+        return []
+
+    async def fake_save_chat_turn(session, session_id, user_id, user_content, assistant_content):
+        pass
+
+    async def fail_create_trip(session, user_id, payload):
+        raise AssertionError("clarification responses must not be persisted")
+
+    monkeypatch.setattr(agent_routes, "run_travel_agent", fake_run_travel_agent)
+    monkeypatch.setattr(agent_routes, "load_chat_history", fake_load_chat_history)
+    monkeypatch.setattr(agent_routes, "save_chat_turn", fake_save_chat_turn)
+    monkeypatch.setattr(agent_routes, "create_trip", fail_create_trip)
+
+    client = TestClient(make_app())
+    response = client.post("/api/agent/chat", json={"message": "Plan a trip", "session_id": TEST_SESSION_ID})
+
+    assert response.status_code == 200
+    assert response.json()["response_type"] == "clarification"
+    assert response.json()["trip_plan"] is None
+    assert response.json()["questions"] == ["Where do you want to go?"]

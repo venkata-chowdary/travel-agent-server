@@ -101,9 +101,15 @@ Reasoning rules (apply in order):
   2. If destination is known AND weather_forecast is missing → return "weather_agent"
   3. Otherwise → return "planner"
 
-Also extract from the user message (first time only):
-  - destination: city or region name. Null if not mentioned.
-  - trip_duration_days: parse from query ("3-day" → 3, "a week" → 7). Default 3.
+Also extract from the FULL conversation (history + current message):
+  - destination: city or region. Null if not mentioned in any turn.
+  - trip_duration_days: number of days from any turn ("five days" → 5, "a week" → 7,
+    "five chill days" → 5, "10 nights" → 10, "this weekend" → 2). Null if never mentioned.
+    Prefer the most recent explicit value when turns conflict.
+  - trip_start_date: resolve to an ISO date (YYYY-MM-DD) using today's date.
+    Examples: "this weekend" → next Saturday, "next Monday" → the coming Monday,
+    "from the 15th" → the nearest future 15th, "in two weeks" → today + 14 days,
+    "tomorrow" → today + 1. Null if no start date or window is mentioned.
 
 Output ONLY the SupervisorDecision JSON. No explanation.
 """.strip()

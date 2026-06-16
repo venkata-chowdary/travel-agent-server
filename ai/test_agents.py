@@ -175,6 +175,10 @@ async def test_full_pipeline_with_destination() -> None:
     t0 = time.perf_counter()
     response = await run_travel_agent(user_id=USER_ID, user_message=QUERY_WITH_DESTINATION)
     dur = elapsed(t0)
+    if response.response_type != "trip_plan" or response.trip_plan is None:
+        fail(f"Expected trip_plan response, got {response.response_type}: {response.assistant_message}")
+        raise AssertionError("No trip_plan")
+    response = response.trip_plan
 
     ok(f"Pipeline completed in {dur}")
     print()
@@ -242,6 +246,16 @@ async def test_full_pipeline_no_destination() -> None:
     dur = elapsed(t0)
 
     ok(f"Pipeline completed in {dur}")
+    if response.response_type == "clarification":
+        ok("Agent asked a clarification question")
+        for question in response.questions:
+            dim(f"  {question}")
+        return
+
+    if response.trip_plan is None:
+        fail("Expected either clarification or trip_plan response")
+        raise AssertionError("No response payload")
+    response = response.trip_plan
     print()
     info("Destination",  response.destination or "—")
     info("Duration",     f"{response.days} day(s)")

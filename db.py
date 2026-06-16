@@ -53,6 +53,7 @@ async def get_db_session() -> AsyncIterator[AsyncSession]:
 
 async def init_db() -> None:
     import auth.models  # noqa: F401
+    import chat.models  # noqa: F401
     import trips.models  # noqa: F401
 
     async with engine.begin() as connection:

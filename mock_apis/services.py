@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-import sys
+import logging
 from datetime import date as _Date, timedelta
 from pathlib import Path
 from typing import Any
@@ -16,6 +16,8 @@ from mock_apis.filters import (
     filter_by_route,
 )
 
+logger = logging.getLogger(__name__)
+
 DATA_DIR = Path(__file__).parent.parent / "mock_data"
 
 
@@ -29,10 +31,10 @@ def _load(name: str) -> list[dict[str, Any]]:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
-        print(f"[mock] ERROR — mock data file missing: {path}", file=sys.stderr, flush=True)
+        logger.error("Mock data file missing: %s", path)
         return []
     except json.JSONDecodeError as exc:
-        print(f"[mock] ERROR — could not parse mock data file {path}: {exc}", file=sys.stderr, flush=True)
+        logger.error("Could not parse mock data file %s: %s", path, exc)
         return []
 
 
@@ -65,7 +67,7 @@ def search_flights(
     max_price: float | None = None,
     airline: str | None = None,
 ) -> dict[str, Any]:
-    print(f"[mock] Searching flights: {source} → {destination} on {date} (objective={objective}, max_price={max_price})", file=sys.stderr, flush=True)
+    logger.info("Searching flights: %s → %s on %s (objective=%s, max_price=%s)", source, destination, date, objective, max_price)
 
     if not source or not destination or not date:
         return _err("Missing required params: source, destination, date")
@@ -90,7 +92,7 @@ def search_flights(
     else:
         results.sort(key=lambda x: x["price"])
 
-    print(f"[mock] Found {len(results)} flight(s)", file=sys.stderr, flush=True)
+    logger.info("Found %d flight(s)", len(results))
     return {
         "success": True,
         "source": source.upper(),
@@ -112,7 +114,7 @@ def search_trains(
     class_type: str | None = None,
     max_price: float | None = None,
 ) -> dict[str, Any]:
-    print(f"[mock] Searching trains: {source} → {destination} on {date} (class={class_type})", file=sys.stderr, flush=True)
+    logger.info("Searching trains: %s → %s on %s (class=%s)", source, destination, date, class_type)
 
     if not source or not destination or not date:
         return _err("Missing required params: source, destination, date")
@@ -143,7 +145,7 @@ def search_trains(
     flattened = [_inject_date(r, date) for r in flattened]
     flattened.sort(key=lambda x: x["price"])
 
-    print(f"[mock] Found {len(flattened)} train option(s)", file=sys.stderr, flush=True)
+    logger.info("Found %d train option(s)", len(flattened))
     return {
         "success": True,
         "source": source.upper(),
@@ -165,7 +167,7 @@ def search_buses(
     bus_type: str | None = None,
     max_price: float | None = None,
 ) -> dict[str, Any]:
-    print(f"[mock] Searching buses: {source} → {destination} on {date} (type={bus_type})", file=sys.stderr, flush=True)
+    logger.info("Searching buses: %s → %s on %s (type=%s)", source, destination, date, bus_type)
 
     if not source or not destination or not date:
         return _err("Missing required params: source, destination, date")
@@ -182,7 +184,7 @@ def search_buses(
     results = [_inject_date(r, date) for r in results]
     results.sort(key=lambda x: x["price"])
 
-    print(f"[mock] Found {len(results)} bus option(s)", file=sys.stderr, flush=True)
+    logger.info("Found %d bus option(s)", len(results))
     return {
         "success": True,
         "source": source.upper(),
@@ -206,7 +208,7 @@ def search_hotels(
     hotel_type: str | None = None,
     min_rating: float | None = None,
 ) -> dict[str, Any]:
-    print(f"[mock] Searching hotels in {destination} ({checkin} to {checkout}, {guests} guest(s))", file=sys.stderr, flush=True)
+    logger.info("Searching hotels in %s (%s to %s, %d guest(s))", destination, checkin, checkout, guests)
 
     if not destination or not checkin or not checkout:
         return _err("Missing required params: destination, checkin, checkout")
@@ -240,7 +242,7 @@ def search_hotels(
 
     enriched.sort(key=lambda x: x["price_per_night"])
 
-    print(f"[mock] Found {len(enriched)} hotel(s)", file=sys.stderr, flush=True)
+    logger.info("Found %d hotel(s)", len(enriched))
     return {
         "success": True,
         "destination": destination,
@@ -264,7 +266,7 @@ def search_restaurants(
     veg_only: bool | None = None,
     min_rating: float | None = None,
 ) -> dict[str, Any]:
-    print(f"[mock] Searching restaurants in {destination} (cuisine={cuisine}, meal={meal_type})", file=sys.stderr, flush=True)
+    logger.info("Searching restaurants in %s (cuisine=%s, meal=%s)", destination, cuisine, meal_type)
 
     if not destination:
         return _err("Missing required param: destination")
@@ -285,7 +287,7 @@ def search_restaurants(
 
     results = sorted(results, key=lambda x: -x.get("rating", 0))
 
-    print(f"[mock] Found {len(results)} restaurant(s)", file=sys.stderr, flush=True)
+    logger.info("Found %d restaurant(s)", len(results))
     return {
         "success": True,
         "destination": destination,
@@ -305,7 +307,7 @@ def search_activities(
     duration_hours: float | None = None,
     min_rating: float | None = None,
 ) -> dict[str, Any]:
-    print(f"[mock] Searching activities in {destination} (interest={interest}, max_price={max_price})", file=sys.stderr, flush=True)
+    logger.info("Searching activities in %s (interest=%s, max_price=%s)", destination, interest, max_price)
 
     if not destination:
         return _err("Missing required param: destination")
@@ -328,7 +330,7 @@ def search_activities(
 
     results = sorted(results, key=lambda x: -x.get("rating", 0))
 
-    print(f"[mock] Found {len(results)} activity/activities", file=sys.stderr, flush=True)
+    logger.info("Found %d activity/activities", len(results))
     return {
         "success": True,
         "destination": destination,

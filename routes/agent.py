@@ -1,5 +1,4 @@
-import sys
-from typing import Annotated
+import logging
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -9,6 +8,7 @@ from ai.schemas import TravelAgentStructuredResponse
 from auth.dependencies import get_current_user
 from auth.models import User
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/agent")
 
 
@@ -23,9 +23,9 @@ class ChatResponse(BaseModel):
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     body: ChatRequest,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: User = Depends(get_current_user),
 ) -> ChatResponse:
-    print(f"[agent] Chat request from user {current_user.id}: {body.message[:80]}", file=sys.stderr, flush=True)
-    trip_plan = await run_travel_agent(str(current_user.id), body.message)
-    print(f"[agent] Chat response ready for user {current_user.id}", file=sys.stderr, flush=True)
+    logger.info("Chat request: %s", body.message[:80])
+    trip_plan = await run_travel_agent(current_user.id, body.message)
+    logger.info("Chat response ready")
     return ChatResponse(trip_plan=trip_plan)

@@ -1,4 +1,4 @@
-import sys
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,6 +10,8 @@ from auth.models import User
 from auth.schemas import AuthResponse, LoginRequest, SignupRequest, UserResponse, PreferencesUpdateRequest
 from auth.security import ACCESS_TOKEN_EXPIRE_SECONDS, hash_password, verify_password, create_access_token
 from db import get_db_session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -26,11 +28,11 @@ async def signup(
     payload: SignupRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> AuthResponse:
-    print(f"[auth] Signup attempt for {payload.email}", file=sys.stderr, flush=True)
+    logger.info("Signup attempt for %s", payload.email)
     result = await session.execute(select(User).where(User.email == payload.email))
     existing_user = result.scalars().first()
     if existing_user:
-        print(f"[auth] Signup failed — email already exists: {payload.email}", file=sys.stderr, flush=True)
+        logger.warning("Signup failed — email already exists: %s", payload.email)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="email already exists",
@@ -45,7 +47,7 @@ async def signup(
     await session.commit()
     await session.refresh(new_user)
 
-    print(f"[auth] New user created: {payload.email} (id={new_user.id})", file=sys.stderr, flush=True)
+    logger.info("New user created: %s (id=%s)", payload.email, new_user.id)
     access_token = create_access_token(user_id=new_user.id)
     return build_auth_response(new_user, access_token)
 
@@ -54,19 +56,19 @@ async def login(
     payload: LoginRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> AuthResponse:
-    print(f"[auth] Login attempt for {payload.email}", file=sys.stderr, flush=True)
+    logger.info("Login attempt for %s", payload.email)
     result = await session.execute(select(User).where(User.email == payload.email))
     user = result.scalars().first()
 
     if not user or not verify_password(payload.password, user.password_hash):
-        print(f"[auth] Login failed — invalid credentials for {payload.email}", file=sys.stderr, flush=True)
+        logger.warning("Login failed — invalid credentials for %s", payload.email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    print(f"[auth] Login successful for {payload.email} (id={user.id})", file=sys.stderr, flush=True)
+    logger.info("Login successful for %s (id=%s)", payload.email, user.id)
     access_token = create_access_token(user_id=user.id)
     return build_auth_response(user, access_token)
 
@@ -88,5 +90,5 @@ async def update_preferences(
     session.add(current_user)
     await session.commit()
     await session.refresh(current_user)
-    print(f"[auth] Preferences updated for user {current_user.id}", file=sys.stderr, flush=True)
+    logger.info("Preferences updated for user %s", current_user.id)
     return UserResponse.model_validate(current_user)

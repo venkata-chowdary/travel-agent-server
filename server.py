@@ -1,4 +1,4 @@
-import sys
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,18 +10,23 @@ from config import settings
 from db import close_db, init_db
 from routes.agent import router as agent_router
 
-
-def log(msg: str) -> None:
-    print(msg, file=sys.stderr, flush=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logging.getLogger("google_genai.models").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    log("[server] Starting up...")
+    logger.info("Starting up...")
     await init_db()
-    log("[server] Database ready — http://127.0.0.1:8000")
+    logger.info("Database ready — http://127.0.0.1:8000")
     yield
-    log("[server] Shutting down")
+    logger.info("Shutting down")
     await close_db()
 
 
@@ -45,8 +50,7 @@ app.include_router(agent_router)
 
 @app.get("/")
 async def read_root() -> dict[str, str]:
-    print("hello")
-    log("[server] GET / hit")
+    logger.info("GET / hit")
     return {
         "status": "ok",
         "service": "autonomous-travel-companion-api",

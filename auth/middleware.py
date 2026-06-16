@@ -1,4 +1,4 @@
-import sys
+import logging
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from auth.security import extract_bearer_token, decode_access_token
@@ -6,9 +6,12 @@ from db import SessionLocal
 from auth.models import User
 from sqlalchemy import select
 
+logger = logging.getLogger(__name__)
+
+
 class AuthContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        print(f"[middleware] {request.method} {request.url.path}", file=sys.stderr, flush=True)
+        logger.info("%s %s", request.method, request.url.path)
         token = extract_bearer_token(request.headers.get("Authorization"))
         if token:
             try:
@@ -20,7 +23,7 @@ class AuthContextMiddleware(BaseHTTPMiddleware):
                     request.state.user = user
                     request.state.auth_error = None
             except Exception as e:  # covers PyJWTError, DB errors, malformed tokens
-                print(f"[auth] Token validation failed: {e}", file=sys.stderr, flush=True)
+                logger.warning("Token validation failed: %s", e)
                 request.state.user = None
                 request.state.auth_error = {"status_code": 401, "detail": str(e)}
         else:

@@ -1,0 +1,209 @@
+import os
+from datetime import datetime, timezone
+from types import SimpleNamespace
+from uuid import UUID, uuid4
+
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://user:pass@localhost/test")
+os.environ.setdefault("JWT_SECRET_KEY", "x" * 32)
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from ai.schemas import TravelAgentStructuredResponse
+from auth.dependencies import get_current_user
+from db import get_db_session
+from routes.agent import router as agent_router
+import routes.agent as agent_routes
+from trips.routes import router as trips_router
+import trips.routes as trip_routes
+
+
+USER_ID = UUID("11111111-1111-1111-1111-111111111111")
+OTHER_ID = UUID("22222222-2222-2222-2222-222222222222")
+
+
+def make_trip(**overrides):
+    now = datetime.now(timezone.utc)
+    data = {
+        "id": uuid4(),
+        "user_id": USER_ID,
+        "destination": "Goa",
+        "origin": None,
+        "start_date": None,
+        "end_date": None,
+        "days": 3,
+        "travelers": 2,
+        "status": "planning",
+        "cover_emoji": "beach",
+        "summary": "Beach plan",
+        "budget": {
+            "flights": 100,
+            "stay": 200,
+            "activities": 50,
+            "food": 40,
+            "total": 390,
+            "currency": "INR",
+        },
+        "itinerary": [
+            {
+                "day": 1,
+                "title": "Arrival",
+                "items": [
+                    {
+                        "time": "10:00",
+                        "title": "Check in",
+                        "description": "Drop bags",
+                        "type": "stay",
+                    }
+                ],
+            }
+        ],
+        "hotel_options": [],
+        "flight_options": [],
+        "daily_forecast": [],
+        "trip_risks": [],
+        "verification_tips": [],
+        "created_at": now,
+        "updated_at": now,
+    }
+    data.update(overrides)
+    return SimpleNamespace(**data)
+
+
+def make_app(authenticated: bool = True) -> FastAPI:
+    app = FastAPI()
+    app.include_router(trips_router)
+    app.include_router(agent_router)
+
+    async def fake_session():
+        yield SimpleNamespace()
+
+    app.dependency_overrides[get_db_session] = fake_session
+    if authenticated:
+        app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=USER_ID)
+    return app
+
+
+def test_trip_endpoints_require_authentication():
+    app = make_app(authenticated=False)
+    client = TestClient(app)
+
+    assert client.get("/api/trips").status_code == 401
+    assert client.get(f"/api/trips/{uuid4()}").status_code == 401
+    assert client.delete(f"/api/trips/{uuid4()}").status_code == 401
+
+
+def test_list_create_detail_and_delete_trips(monkeypatch):
+    trip = make_trip()
+
+    async def fake_list_trips(session, user_id):
+        assert user_id == USER_ID
+        return [trip]
+
+    async def fake_create_trip(session, user_id, payload):
+        assert user_id == USER_ID
+        assert payload.destination == "Goa"
+        return make_trip(id=payload.id or trip.id)
+
+    async def fake_get_trip(session, user_id, trip_id):
+        assert user_id == USER_ID
+        return trip if trip_id == trip.id else None
+
+    async def fake_delete_trip(session, user_id, trip_id):
+        assert user_id == USER_ID
+        return trip_id == trip.id
+
+    monkeypatch.setattr(trip_routes, "list_trips", fake_list_trips)
+    monkeypatch.setattr(trip_routes, "create_trip", fake_create_trip)
+    monkeypatch.setattr(trip_routes, "get_trip", fake_get_trip)
+    monkeypatch.setattr(trip_routes, "delete_trip", fake_delete_trip)
+
+    client = TestClient(make_app())
+    payload = {
+        "id": str(trip.id),
+        "destination": "Goa",
+        "days": 3,
+        "travelers": 2,
+        "status": "planning",
+        "cover_emoji": "beach",
+        "summary": "Beach plan",
+        "budget": trip.budget,
+        "itinerary": trip.itinerary,
+        "hotel_options": [],
+        "flight_options": [],
+    }
+
+    listed = client.get("/api/trips")
+    assert listed.status_code == 200
+    assert listed.json()[0]["id"] == str(trip.id)
+
+    created = client.post("/api/trips", json=payload)
+    assert created.status_code == 201
+    assert created.json()["destination"] == "Goa"
+
+    detail = client.get(f"/api/trips/{trip.id}")
+    assert detail.status_code == 200
+    assert detail.json()["user_id"] == str(USER_ID)
+
+    missing = client.get(f"/api/trips/{OTHER_ID}")
+    assert missing.status_code == 404
+
+    deleted = client.delete(f"/api/trips/{trip.id}")
+    assert deleted.status_code == 204
+
+    missing_delete = client.delete(f"/api/trips/{OTHER_ID}")
+    assert missing_delete.status_code == 404
+
+
+def test_agent_chat_persists_generated_plan(monkeypatch):
+    saved = {}
+    plan = TravelAgentStructuredResponse(
+        id=str(uuid4()),
+        destination="Tokyo",
+        days=5,
+        travelers=1,
+        summary="A food and city plan",
+        itinerary=[
+            {
+                "day": 1,
+                "title": "Arrival",
+                "items": [
+                    {
+                        "time": "18:00",
+                        "title": "Ramen dinner",
+                        "description": "First dinner in Shinjuku",
+                        "type": "meal",
+                    }
+                ],
+            }
+        ],
+        budget={
+            "flights": 1000,
+            "stay": 700,
+            "activities": 200,
+            "food": 300,
+            "total": 2200,
+            "currency": "INR",
+        },
+    )
+
+    async def fake_run_travel_agent(user_id, message):
+        assert user_id == USER_ID
+        assert message == "Plan Tokyo"
+        return plan
+
+    async def fake_create_trip(session, user_id, payload):
+        saved["user_id"] = user_id
+        saved["payload"] = payload
+        return make_trip(id=UUID(payload.id), destination=payload.destination)
+
+    monkeypatch.setattr(agent_routes, "run_travel_agent", fake_run_travel_agent)
+    monkeypatch.setattr(agent_routes, "create_trip", fake_create_trip)
+
+    client = TestClient(make_app())
+    response = client.post("/api/agent/chat", json={"message": "Plan Tokyo"})
+
+    assert response.status_code == 200
+    assert response.json()["trip_plan"]["destination"] == "Tokyo"
+    assert saved["user_id"] == USER_ID
+    assert saved["payload"] == plan

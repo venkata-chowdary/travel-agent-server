@@ -9,6 +9,7 @@ from auth.routes import router as auth_router
 from config import settings
 from db import close_db, init_db
 from routes.agent import router as agent_router
+from trips.routes import router as trips_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +47,7 @@ app.add_middleware(AuthContextMiddleware)
 
 app.include_router(auth_router)
 app.include_router(agent_router)
+app.include_router(trips_router)
 
 
 @app.get("/")

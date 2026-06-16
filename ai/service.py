@@ -8,6 +8,8 @@ from sqlalchemy import select
 from ai.schemas import TravelPreferences
 from auth.models import User
 from db import SessionLocal
+from trips.models import Trip
+from trips.service import trip_to_history
 
 
 async def fetch_user_profile(user_id: str | UUID) -> dict[str, Any]:
@@ -24,43 +26,18 @@ async def fetch_user_profile(user_id: str | UUID) -> dict[str, Any]:
 
 
 async def fetch_past_trips(user_id: str | UUID) -> list[dict[str, Any]]:
-    """Return mock past trips. Swap body for a real DB query when trip history exists."""
-    _ = user_id
-    return [
-        {
-            "destination": "Goa",
-            "duration_days": 5,
-            "travel_style": "relaxation",
-            "accommodation": "beachside budget stay",
-            "transport": ["flight", "local taxi"],
-            "budget_per_day_inr": 2500,
-            "travel_companions": "solo",
-            "pain_points": ["overcrowded beach", "late night bus was tiring"],
-            "overall_rating": 4.5,
-        },
-        {
-            "destination": "Coorg",
-            "duration_days": 3,
-            "travel_style": "relaxation",
-            "accommodation": "homestay",
-            "transport": ["self-drive car"],
-            "budget_per_day_inr": 3000,
-            "travel_companions": "couple",
-            "pain_points": ["packed resort schedule felt rushed"],
-            "overall_rating": 4.2,
-        },
-        {
-            "destination": "Rajasthan",
-            "duration_days": 7,
-            "travel_style": "cultural",
-            "accommodation": "heritage hotel",
-            "transport": ["train", "auto rickshaw"],
-            "budget_per_day_inr": 3500,
-            "travel_companions": "family",
-            "pain_points": ["itinerary too packed on days 4-5"],
-            "overall_rating": 4.0,
-        },
-    ]
+    """Return persisted trip history for the given user."""
+    parsed_user_id = UUID(str(user_id))
+    async with SessionLocal() as session:
+        result = await session.execute(
+            select(Trip)
+            .where(Trip.user_id == parsed_user_id)
+            .order_by(Trip.created_at.desc())
+            .limit(10)
+        )
+        trips = result.scalars().all()
+
+    return [trip_to_history(trip) for trip in trips]
 
 
 async def fetch_user_preferences(user_id: str | UUID) -> dict[str, Any]:

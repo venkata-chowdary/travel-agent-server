@@ -68,6 +68,7 @@ SCHEMA_COMPATIBILITY_STATEMENTS = (
     "ALTER TABLE trips ADD COLUMN IF NOT EXISTS daily_forecast JSONB NOT NULL DEFAULT '[]'::jsonb",
     "ALTER TABLE trips ADD COLUMN IF NOT EXISTS trip_risks JSONB NOT NULL DEFAULT '[]'::jsonb",
     "ALTER TABLE trips ADD COLUMN IF NOT EXISTS verification_tips JSONB NOT NULL DEFAULT '[]'::jsonb",
+    "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS payload JSONB NOT NULL DEFAULT '{}'::jsonb",
 )
 
 

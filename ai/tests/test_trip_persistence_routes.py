@@ -20,6 +20,7 @@ import trips.routes as trip_routes
 
 USER_ID = UUID("11111111-1111-1111-1111-111111111111")
 OTHER_ID = UUID("22222222-2222-2222-2222-222222222222")
+TEST_SESSION_ID = "test-session-00000000"
 
 
 def make_trip(**overrides):
@@ -94,6 +95,54 @@ def test_trip_endpoints_require_authentication():
     assert client.delete(f"/api/trips/{uuid4()}").status_code == 401
 
 
+def test_chat_history_returns_current_user_session_messages(monkeypatch):
+    now = datetime.now(timezone.utc)
+    rows = [
+        SimpleNamespace(id=uuid4(), role="user", content="Plan Goa", created_at=now, payload={}),
+        SimpleNamespace(
+            id=uuid4(),
+            role="assistant",
+            content="I found options.",
+            created_at=now,
+            payload={
+                "response_type": "transport_choice",
+                "transport_choice": {"origin": "Hyderabad", "destination": "Goa"},
+            },
+        ),
+    ]
+
+    async def fake_load_chat_history(session, session_id, user_id=None):
+        assert session_id == TEST_SESSION_ID
+        assert user_id == USER_ID
+        return rows
+
+    monkeypatch.setattr(agent_routes, "load_chat_history", fake_load_chat_history)
+
+    client = TestClient(make_app())
+    response = client.get(f"/api/agent/history/{TEST_SESSION_ID}")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "id": str(rows[0].id),
+            "role": "user",
+            "content": "Plan Goa",
+            "created_at": now.isoformat(),
+            "payload": {},
+        },
+        {
+            "id": str(rows[1].id),
+            "role": "assistant",
+            "content": "I found options.",
+            "created_at": now.isoformat(),
+            "payload": {
+                "response_type": "transport_choice",
+                "transport_choice": {"origin": "Hyderabad", "destination": "Goa"},
+            },
+        },
+    ]
+
+
 def test_list_create_detail_and_delete_trips(monkeypatch):
     trip = make_trip()
 
@@ -157,9 +206,6 @@ def test_list_create_detail_and_delete_trips(monkeypatch):
     assert missing_delete.status_code == 404
 
 
-TEST_SESSION_ID = "test-session-00000000"
-
-
 def test_agent_chat_persists_generated_plan(monkeypatch):
     saved = {}
     plan = TravelAgentStructuredResponse(
@@ -209,9 +255,10 @@ def test_agent_chat_persists_generated_plan(monkeypatch):
         ],
     )
 
-    async def fake_run_travel_agent(user_id, message, history=None, transport_selection=None):
+    async def fake_run_travel_agent(user_id, message, session_id, history=None, transport_selection=None):
         assert user_id == USER_ID
         assert message == "Plan Tokyo"
+        assert session_id == TEST_SESSION_ID
         assert transport_selection is None
         return TravelAgentChatResponse(
             response_type="trip_plan",
@@ -219,11 +266,22 @@ def test_agent_chat_persists_generated_plan(monkeypatch):
             trip_plan=plan,
         )
 
-    async def fake_load_chat_history(session, session_id):
+    async def fake_load_chat_history(session, session_id, user_id=None):
+        assert user_id == USER_ID
         return []
 
-    async def fake_save_chat_turn(session, session_id, user_id, user_content, assistant_content):
-        pass
+    async def fake_save_chat_turn(
+        session,
+        session_id,
+        user_id,
+        user_content,
+        assistant_content,
+        user_payload=None,
+        assistant_payload=None,
+    ):
+        assert user_payload == {}
+        assert assistant_payload["response_type"] == "trip_plan"
+        assert assistant_payload["trip_plan"]["destination"] == "Tokyo"
 
     async def fake_create_trip(session, user_id, payload):
         saved["user_id"] = user_id
@@ -246,10 +304,99 @@ def test_agent_chat_persists_generated_plan(monkeypatch):
     assert saved["payload"] == plan
 
 
+def test_agent_chat_with_target_trip_updates_existing_trip(monkeypatch):
+    trip_id = uuid4()
+    saved = {}
+    existing_trip = make_trip(id=trip_id, destination="Goa")
+    plan = TravelAgentStructuredResponse(
+        id=str(uuid4()),
+        destination="Goa",
+        days=4,
+        travelers=2,
+        summary="Updated Goa plan",
+        itinerary=[],
+        budget={
+            "flights": 100,
+            "stay": 200,
+            "activities": 50,
+            "food": 40,
+            "total": 390,
+            "currency": "INR",
+        },
+    )
+
+    async def fake_get_trip(session, user_id, requested_trip_id):
+        assert user_id == USER_ID
+        assert requested_trip_id == trip_id
+        return existing_trip
+
+    async def fake_run_travel_agent(user_id, message, session_id, history=None, transport_selection=None):
+        assert user_id == USER_ID
+        assert message == "Make it four days"
+        assert session_id == TEST_SESSION_ID
+        assert history
+        assert "editing an existing saved trip" in history[0].content
+        return TravelAgentChatResponse(
+            response_type="trip_plan",
+            assistant_message="Here's an updated Goa plan.",
+            trip_plan=plan,
+        )
+
+    async def fake_load_chat_history(session, session_id, user_id=None):
+        assert user_id == USER_ID
+        return []
+
+    async def fake_save_chat_turn(
+        session,
+        session_id,
+        user_id,
+        user_content,
+        assistant_content,
+        user_payload=None,
+        assistant_payload=None,
+    ):
+        assert user_payload == {"target_trip_id": str(trip_id)}
+        assert assistant_payload["response_type"] == "trip_plan"
+        assert assistant_payload["trip_plan"]["id"] == str(trip_id)
+
+    async def fake_update_trip_from_plan(session, user_id, requested_trip_id, payload):
+        saved["updated"] = True
+        saved["trip_id"] = requested_trip_id
+        saved["payload"] = payload
+        return make_trip(id=requested_trip_id, destination=payload.destination)
+
+    async def fail_create_trip(session, user_id, payload):
+        raise AssertionError("editing an existing trip must not create a duplicate")
+
+    monkeypatch.setattr(agent_routes, "get_trip", fake_get_trip)
+    monkeypatch.setattr(agent_routes, "run_travel_agent", fake_run_travel_agent)
+    monkeypatch.setattr(agent_routes, "load_chat_history", fake_load_chat_history)
+    monkeypatch.setattr(agent_routes, "save_chat_turn", fake_save_chat_turn)
+    monkeypatch.setattr(agent_routes, "update_trip_from_plan", fake_update_trip_from_plan)
+    monkeypatch.setattr(agent_routes, "create_trip", fail_create_trip)
+
+    client = TestClient(make_app())
+    response = client.post(
+        "/api/agent/chat",
+        json={
+            "message": "Make it four days",
+            "session_id": TEST_SESSION_ID,
+            "target_trip_id": str(trip_id),
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["trip_plan"]["id"] == str(trip_id)
+    assert saved["updated"] is True
+    assert saved["trip_id"] == trip_id
+    assert saved["payload"].id == str(trip_id)
+
+
 def test_agent_chat_clarification_does_not_persist(monkeypatch):
-    async def fake_run_travel_agent(user_id, message, history=None, transport_selection=None):
+    async def fake_run_travel_agent(user_id, message, session_id, history=None, transport_selection=None):
         assert user_id == USER_ID
         assert message == "Plan a trip"
+        assert session_id == TEST_SESSION_ID
         assert transport_selection is None
         return TravelAgentChatResponse(
             response_type="clarification",
@@ -257,11 +404,21 @@ def test_agent_chat_clarification_does_not_persist(monkeypatch):
             questions=["Where do you want to go?"],
         )
 
-    async def fake_load_chat_history(session, session_id):
+    async def fake_load_chat_history(session, session_id, user_id=None):
+        assert user_id == USER_ID
         return []
 
-    async def fake_save_chat_turn(session, session_id, user_id, user_content, assistant_content):
-        pass
+    async def fake_save_chat_turn(
+        session,
+        session_id,
+        user_id,
+        user_content,
+        assistant_content,
+        user_payload=None,
+        assistant_payload=None,
+    ):
+        assert user_payload == {}
+        assert assistant_payload["response_type"] == "clarification"
 
     async def fail_create_trip(session, user_id, payload):
         raise AssertionError("clarification responses must not be persisted")

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from ai.agent import close_agent_checkpointing, init_agent_checkpointing
 from auth.middleware import AuthContextMiddleware
 from auth.routes import router as auth_router
 from config import settings
@@ -25,9 +26,11 @@ logger = logging.getLogger(__name__)
 async def lifespan(_: FastAPI):
     logger.info("Starting up...")
     await init_db()
+    await init_agent_checkpointing()
     logger.info("Database ready — http://127.0.0.1:8000")
     yield
     logger.info("Shutting down")
+    await close_agent_checkpointing()
     await close_db()
 
 

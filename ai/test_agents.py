@@ -173,7 +173,11 @@ async def test_full_pipeline_with_destination() -> None:
     print(f"  Query   : {BOLD}{QUERY_WITH_DESTINATION}{RESET}\n")
 
     t0 = time.perf_counter()
-    response = await run_travel_agent(user_id=USER_ID, user_message=QUERY_WITH_DESTINATION)
+    response = await run_travel_agent(
+        user_id=USER_ID,
+        user_message=QUERY_WITH_DESTINATION,
+        session_id="manual-test-with-destination",
+    )
     dur = elapsed(t0)
     if response.response_type != "trip_plan" or response.trip_plan is None:
         fail(f"Expected trip_plan response, got {response.response_type}: {response.assistant_message}")
@@ -242,7 +246,11 @@ async def test_full_pipeline_no_destination() -> None:
     print(f"  Query   : {BOLD}{QUERY_WITHOUT_DESTINATION}{RESET}\n")
 
     t0 = time.perf_counter()
-    response = await run_travel_agent(user_id=USER_ID, user_message=QUERY_WITHOUT_DESTINATION)
+    response = await run_travel_agent(
+        user_id=USER_ID,
+        user_message=QUERY_WITHOUT_DESTINATION,
+        session_id="manual-test-without-destination",
+    )
     dur = elapsed(t0)
 
     ok(f"Pipeline completed in {dur}")

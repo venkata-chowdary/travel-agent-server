@@ -3,12 +3,12 @@ from __future__ import annotations
 import logging
 import sys
 from datetime import date, datetime, timedelta, timezone
-from typing import Annotated, Literal, TypedDict
+from typing import Any, Literal, TypedDict
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 
 from ai.agents.preference_agent import build_preference_executor
@@ -67,7 +67,7 @@ class SupervisorDecision(BaseModel):
 class TravelState(TypedDict):
     user_id: str
     user_message: str
-    messages: Annotated[list[BaseMessage], add_messages]
+    messages: list[BaseMessage]
     next: str
     origin: str | None
     destination: str | None
@@ -229,30 +229,67 @@ async def supervisor_node(state: TravelState) -> dict:
         decision.trip_duration_days,
     )
     next_step = decision.next
+    previous_origin = state.get("origin") or _origin_from_state(state)
+    previous_destination = state.get("destination")
+    previous_days = state.get("trip_duration_days")
+    previous_start_date = state.get("trip_start_date")
+
     origin = decision.origin or state.get("origin") or _origin_from_state(state)
     destination = decision.destination or state.get("destination")
+    trip_duration_days = decision.trip_duration_days or state.get("trip_duration_days")
+    trip_start_date = decision.trip_start_date or state.get("trip_start_date")
+
+    origin_changed = bool(decision.origin and previous_origin and decision.origin.lower() != previous_origin.lower())
+    destination_changed = bool(
+        decision.destination
+        and previous_destination
+        and decision.destination.lower() != previous_destination.lower()
+    )
+    days_changed = bool(
+        decision.trip_duration_days
+        and previous_days
+        and decision.trip_duration_days != previous_days
+    )
+    start_date_changed = bool(
+        decision.trip_start_date
+        and previous_start_date
+        and decision.trip_start_date != previous_start_date
+    )
+    weather_invalidated = destination_changed or days_changed or start_date_changed
+    transport_invalidated = origin_changed or destination_changed or days_changed or start_date_changed
+    weather_forecast = None if weather_invalidated else state.get("weather_forecast")
+    transport_choice = None if transport_invalidated else state.get("transport_choice")
+    selected_transport_options = None if transport_invalidated else state.get("selected_transport_options")
 
     if state.get("preference_context") and not state.get("clarification_checked"):
         next_step = "clarifier"
     elif (
         state.get("preference_context")
-        and state.get("weather_forecast")
-        and not state.get("selected_transport_options")
-        and not state.get("transport_choice")
+        and weather_forecast
+        and not selected_transport_options
+        and not transport_choice
         and origin
         and destination
     ):
         next_step = "transport_agent"
-    elif state.get("selected_transport_options"):
+    elif selected_transport_options:
         next_step = "planner"
+    elif weather_invalidated and destination:
+        next_step = "weather_agent"
 
-    return {
+    updates = {
         "next": next_step,
         "origin": origin,
         "destination": destination,
-        "trip_duration_days": decision.trip_duration_days or state.get("trip_duration_days"),
-        "trip_start_date": decision.trip_start_date or state.get("trip_start_date"),
+        "trip_duration_days": trip_duration_days,
+        "trip_start_date": trip_start_date,
     }
+    if weather_invalidated:
+        updates["weather_forecast"] = None
+    if transport_invalidated:
+        updates["transport_choice"] = None
+        updates["selected_transport_options"] = None
+    return updates
 
 
 async def preference_agent_node(state: TravelState) -> dict:
@@ -411,7 +448,81 @@ graph.add_conditional_edges("supervisor", _route, {
 })
 graph.add_edge("planner", END)
 
+_checkpoint_pool: Any | None = None
+_checkpoint_saver: Any | None = None
 agent = graph.compile()
+
+
+def _checkpoint_database_url(database_url: str) -> str:
+    """Return a psycopg-compatible Postgres URL for LangGraph checkpointing."""
+    normalized_url = database_url.strip()
+    if normalized_url.startswith("postgres://"):
+        normalized_url = normalized_url.replace("postgres://", "postgresql://", 1)
+    elif normalized_url.startswith("postgresql+asyncpg://"):
+        normalized_url = normalized_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+    parsed_url = urlparse(normalized_url)
+    query_params = dict(parse_qsl(parsed_url.query, keep_blank_values=True))
+    ssl = query_params.pop("ssl", None)
+    if ssl and "sslmode" not in query_params:
+        query_params["sslmode"] = ssl
+
+    return urlunparse(parsed_url._replace(query=urlencode(query_params)))
+
+
+async def init_agent_checkpointing() -> None:
+    """Initialise Postgres-backed LangGraph checkpoints for chat sessions."""
+    global _checkpoint_pool, _checkpoint_saver, agent
+
+    if _checkpoint_saver is not None:
+        return
+
+    try:
+        from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+        from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
+        from psycopg.rows import dict_row
+        from psycopg_pool import AsyncConnectionPool
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "Postgres checkpointing requires the langgraph-checkpoint-postgres package. "
+            "Install backend requirements with: pip install -r requirements.txt"
+        ) from exc
+
+    checkpoint_url = _checkpoint_database_url(settings.database_url)
+    serde = JsonPlusSerializer(allowed_json_modules=[
+        ("ai.schemas.preferences", "PreferenceContext"),
+        ("ai.schemas.transport", "TransportChoiceResponse"),
+        ("ai.schemas.transport", "TransportOption"),
+        ("ai.schemas.weather", "WeatherForecastResponse"),
+        ("ai.schemas.weather", "DailyForecast"),
+        ("ai.schemas.weather", "TripRisk"),
+    ])
+
+    _checkpoint_pool = AsyncConnectionPool(
+        conninfo=checkpoint_url,
+        kwargs={"autocommit": True, "prepare_threshold": 0, "row_factory": dict_row},
+        min_size=1,
+        max_size=5,
+        open=False,
+    )
+    await _checkpoint_pool.open()
+
+    _checkpoint_saver = AsyncPostgresSaver(conn=_checkpoint_pool, serde=serde)
+    await _checkpoint_saver.setup()
+    agent = graph.compile(checkpointer=_checkpoint_saver)
+    logger.info("LangGraph Postgres checkpointing ready")
+
+
+async def close_agent_checkpointing() -> None:
+    """Close the Postgres checkpoint connection pool on app shutdown."""
+    global _checkpoint_pool, _checkpoint_saver, agent
+
+    if _checkpoint_pool is not None:
+        await _checkpoint_pool.close()
+
+    _checkpoint_pool = None
+    _checkpoint_saver = None
+    agent = graph.compile()
 
 
 # ── Public API ───────────────────────────────────────────────────────────────
@@ -419,29 +530,44 @@ agent = graph.compile()
 async def run_travel_agent(
     user_id: str,
     user_message: str,
+    session_id: str,
     history: list[BaseMessage] | None = None,
     transport_selection: TransportSelection | None = None,
 ) -> TravelAgentChatResponse:
-    is_followup = any(isinstance(m, AIMessage) for m in (history or []))
     selected_options = transport_selection.selected_options if transport_selection else None
+    config: dict[str, Any] = {"configurable": {"thread_id": session_id}}
 
-    result = await agent.ainvoke({
-        "user_id": user_id,
+    input_state: dict[str, Any] = {
+        "user_id": str(user_id),
         "user_message": user_message,
         "messages": history or [],
         "next": "",
-        "origin": transport_selection.origin if transport_selection else None,
-        "destination": transport_selection.destination if transport_selection else None,
-        "trip_duration_days": transport_selection.days if transport_selection else None,
-        "trip_start_date": transport_selection.start_date if transport_selection else None,
         "clarification_checked": False,
         "clarification_response": None,
-        "preference_context": None if transport_selection else (PreferenceContext() if is_followup else None),
-        "weather_forecast": None,
-        "transport_choice": None,
-        "selected_transport_options": selected_options,
         "structured_response": None,
-    })
+    }
+    if transport_selection:
+        input_state.update({
+            "origin": transport_selection.origin,
+            "destination": transport_selection.destination,
+            "trip_duration_days": transport_selection.days,
+            "trip_start_date": transport_selection.start_date,
+            "transport_choice": None,
+            "selected_transport_options": selected_options,
+        })
+
+    try:
+        result = await agent.ainvoke(input_state, config=config)
+    except Exception as exc:
+        import psycopg
+        if isinstance(exc, psycopg.OperationalError):
+            logger.warning("Postgres connection dropped, reinitialising checkpointer and retrying...")
+            await close_agent_checkpointing()
+            await init_agent_checkpointing()
+            result = await agent.ainvoke(input_state, config=config)
+        else:
+            raise
+
     if result.get("clarification_response"):
         return result["clarification_response"]
 

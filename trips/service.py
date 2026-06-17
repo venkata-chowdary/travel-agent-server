@@ -56,6 +56,44 @@ async def create_trip(
     return trip
 
 
+def _apply_trip_data(trip: Trip, trip_data: TripCreate) -> None:
+    trip.destination = trip_data.destination
+    trip.origin = trip_data.origin
+    trip.start_date = trip_data.start_date
+    trip.end_date = trip_data.end_date
+    trip.days = trip_data.days
+    trip.travelers = trip_data.travelers
+    trip.status = trip_data.status
+    trip.cover_emoji = trip_data.cover_emoji
+    trip.summary = trip_data.summary
+    trip.budget = _dump(trip_data.budget)
+    trip.itinerary = [_dump(day) for day in trip_data.itinerary]
+    trip.hotel_options = trip_data.hotel_options
+    trip.flight_options = trip_data.flight_options
+    trip.transport_options = [_dump(option) for option in trip_data.transport_options]
+    trip.daily_forecast = [_dump(day) for day in trip_data.daily_forecast]
+    trip.trip_risks = [_dump(risk) for risk in trip_data.trip_risks]
+    trip.verification_tips = trip_data.verification_tips
+
+
+async def update_trip_from_plan(
+    session: AsyncSession,
+    user_id: str | UUID,
+    trip_id: str | UUID,
+    payload: TripCreate | TravelAgentStructuredResponse,
+) -> Trip | None:
+    trip = await get_trip(session, user_id, trip_id)
+    if trip is None:
+        return None
+
+    trip_data = _trip_create_from_plan(payload) if isinstance(payload, TravelAgentStructuredResponse) else payload
+    _apply_trip_data(trip, trip_data)
+    session.add(trip)
+    await session.commit()
+    await session.refresh(trip)
+    return trip
+
+
 async def list_trips(session: AsyncSession, user_id: str | UUID) -> list[Trip]:
     result = await session.execute(
         select(Trip)

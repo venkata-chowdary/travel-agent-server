@@ -9,5 +9,7 @@ email-validator
 langchain-core
 langchain-google-genai
 langgraph
+langgraph-checkpoint-postgres
+psycopg[binary]
 pytest
 pytest-asyncio

@@ -54,9 +54,13 @@ async def main():
                     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     role VARCHAR(16) NOT NULL,
                     content TEXT NOT NULL,
+                    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
                 );
             """))
+            await conn.execute(
+                text("ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS payload JSONB NOT NULL DEFAULT '{}'::jsonb;")
+            )
             await conn.execute(
                 text("CREATE INDEX IF NOT EXISTS ix_chat_messages_session_id ON chat_messages(session_id);")
             )

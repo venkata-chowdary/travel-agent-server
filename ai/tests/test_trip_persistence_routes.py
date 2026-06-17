@@ -60,6 +60,7 @@ def make_trip(**overrides):
         ],
         "hotel_options": [],
         "flight_options": [],
+        "transport_options": [],
         "daily_forecast": [],
         "trip_risks": [],
         "verification_tips": [],
@@ -131,6 +132,7 @@ def test_list_create_detail_and_delete_trips(monkeypatch):
         "itinerary": trip.itinerary,
         "hotel_options": [],
         "flight_options": [],
+        "transport_options": [],
     }
 
     listed = client.get("/api/trips")
@@ -188,11 +190,29 @@ def test_agent_chat_persists_generated_plan(monkeypatch):
             "total": 2200,
             "currency": "INR",
         },
+        transport_options=[
+            {
+                "id": "outbound_flt_001",
+                "mode": "flight",
+                "leg": "outbound",
+                "provider": "IndiGo",
+                "from": "HYD",
+                "to": "GOI",
+                "depart": "08:00",
+                "arrive": "09:30",
+                "duration": "1h 30m",
+                "price": 4200,
+                "available_seats": 24,
+                "rating": 4.3,
+                "details": {"flight_number": "6E-245"},
+            }
+        ],
     )
 
-    async def fake_run_travel_agent(user_id, message, history=None):
+    async def fake_run_travel_agent(user_id, message, history=None, transport_selection=None):
         assert user_id == USER_ID
         assert message == "Plan Tokyo"
+        assert transport_selection is None
         return TravelAgentChatResponse(
             response_type="trip_plan",
             assistant_message="Here's a Tokyo plan.",
@@ -221,14 +241,16 @@ def test_agent_chat_persists_generated_plan(monkeypatch):
     assert response.status_code == 200
     assert response.json()["response_type"] == "trip_plan"
     assert response.json()["trip_plan"]["destination"] == "Tokyo"
+    assert response.json()["trip_plan"]["transport_options"][0]["id"] == "outbound_flt_001"
     assert saved["user_id"] == USER_ID
     assert saved["payload"] == plan
 
 
 def test_agent_chat_clarification_does_not_persist(monkeypatch):
-    async def fake_run_travel_agent(user_id, message, history=None):
+    async def fake_run_travel_agent(user_id, message, history=None, transport_selection=None):
         assert user_id == USER_ID
         assert message == "Plan a trip"
+        assert transport_selection is None
         return TravelAgentChatResponse(
             response_type="clarification",
             assistant_message="Nice, I can plan that. Where do you want to go?",

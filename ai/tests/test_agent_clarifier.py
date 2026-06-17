@@ -13,12 +13,15 @@ def base_state(message: str, **overrides):
         "user_message": message,
         "messages": [],
         "next": "",
+        "origin": None,
         "destination": None,
         "trip_duration_days": None,
         "clarification_checked": False,
         "clarification_response": None,
         "preference_context": PreferenceContext(),
         "weather_forecast": None,
+        "transport_choice": None,
+        "selected_transport_options": None,
         "structured_response": None,
     }
     state.update(overrides)
@@ -38,7 +41,19 @@ def test_clarifier_uses_saved_budget_preference():
         "Plan a 3 day Goa trip",
         destination="Goa",
         trip_duration_days=3,
-        preference_context=PreferenceContext(budget_style="budget", currency="INR"),
+        preference_context=PreferenceContext(budget_style="budget", currency="INR", home_city="Hyderabad"),
     ))
 
     assert response is None
+
+
+def test_clarifier_asks_for_origin_when_missing_from_profile():
+    response = _clarification_response(base_state(
+        "Plan a 3 day Goa trip",
+        destination="Goa",
+        trip_duration_days=3,
+        preference_context=PreferenceContext(home_city=None),
+    ))
+
+    assert response is not None
+    assert "starting from" in response.assistant_message

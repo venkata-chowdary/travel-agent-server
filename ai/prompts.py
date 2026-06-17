@@ -44,6 +44,9 @@ MANDATORY fields — you MUST populate all of these, no exceptions:
 Data policy:
 - Traveler profile and weather forecast below come from specialist agents — treat
   them as authoritative. Do not contradict or supplement with general knowledge.
+- Selected transport below comes from the user's chosen option(s). Build Day 1
+  and final-day transport around those exact timings/providers, and set
+  budget.flights to the selected transport total even when the mode is train or bus.
 - When specialist data is absent, use general knowledge and flag assumptions in
   verification_tips.
 
@@ -102,6 +105,7 @@ Reasoning rules (apply in order):
   3. Otherwise → return "planner"
 
 Also extract from the FULL conversation (history + current message):
+  - origin: departure city or region. Null if not mentioned in any turn.
   - destination: city or region. Null if not mentioned in any turn.
   - trip_duration_days: number of days from any turn ("five days" → 5, "a week" → 7,
     "five chill days" → 5, "10 nights" → 10, "this weekend" → 2). Null if never mentioned.

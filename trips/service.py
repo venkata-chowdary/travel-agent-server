@@ -13,7 +13,7 @@ from trips.schemas import TripCreate
 
 def _dump(value: Any) -> Any:
     if hasattr(value, "model_dump"):
-        return value.model_dump(mode="json")
+        return value.model_dump(mode="json", by_alias=True)
     return value
 
 
@@ -44,6 +44,7 @@ async def create_trip(
         itinerary=[_dump(day) for day in trip_data.itinerary],
         hotel_options=trip_data.hotel_options,
         flight_options=trip_data.flight_options,
+        transport_options=[_dump(option) for option in trip_data.transport_options],
         daily_forecast=[_dump(day) for day in trip_data.daily_forecast],
         trip_risks=[_dump(risk) for risk in trip_data.trip_risks],
         verification_tips=trip_data.verification_tips,

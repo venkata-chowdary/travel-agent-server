@@ -1,6 +1,8 @@
 from collections.abc import AsyncIterator
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -51,6 +53,29 @@ async def get_db_session() -> AsyncIterator[AsyncSession]:
         yield session
 
 
+SCHEMA_COMPATIBILITY_STATEMENTS = (
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences JSONB DEFAULT '{}'::jsonb",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_seen_preferences_dialog BOOLEAN DEFAULT FALSE",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS origin VARCHAR(255)",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS start_date VARCHAR(64)",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS end_date VARCHAR(64)",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS travelers INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'planning'",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS cover_emoji VARCHAR(32) NOT NULL DEFAULT 'plane'",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS hotel_options JSONB NOT NULL DEFAULT '[]'::jsonb",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS flight_options JSONB NOT NULL DEFAULT '[]'::jsonb",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS transport_options JSONB NOT NULL DEFAULT '[]'::jsonb",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS daily_forecast JSONB NOT NULL DEFAULT '[]'::jsonb",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS trip_risks JSONB NOT NULL DEFAULT '[]'::jsonb",
+    "ALTER TABLE trips ADD COLUMN IF NOT EXISTS verification_tips JSONB NOT NULL DEFAULT '[]'::jsonb",
+)
+
+
+async def ensure_schema_compatibility(connection: AsyncConnection) -> None:
+    for statement in SCHEMA_COMPATIBILITY_STATEMENTS:
+        await connection.execute(text(statement))
+
+
 async def init_db() -> None:
     import auth.models  # noqa: F401
     import chat.models  # noqa: F401
@@ -58,6 +83,7 @@ async def init_db() -> None:
 
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
+        await ensure_schema_compatibility(connection)
 
 
 async def close_db() -> None:

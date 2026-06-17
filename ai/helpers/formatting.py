@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ai.schemas import PreferenceContext, TravelPreferences
+from ai.schemas.transport import TransportOption
 from ai.schemas.weather import WeatherForecastResponse
 
 
@@ -69,4 +70,31 @@ def format_weather_block(forecast: WeatherForecastResponse | None) -> str:
             lines.append(
                 f"    Day {risk.day} [{risk.severity}] {risk.risk_type}: {risk.recommendation}"
             )
+    return "\n".join(lines)
+
+
+def format_transport_block(options: list[TransportOption] | None) -> str:
+    if not options:
+        return ""
+
+    lines = ["\n\n[SELECTED TRANSPORT - chosen by the user. Treat as authoritative:]"]
+    total = 0
+    for option in options:
+        total += option.price
+        details = []
+        if option.details.get("flight_number"):
+            details.append(f"flight {option.details['flight_number']}")
+        if option.details.get("train_number"):
+            details.append(f"train {option.details['train_number']}")
+        if option.details.get("class_type"):
+            details.append(f"class {option.details['class_type']}")
+        if option.details.get("bus_type"):
+            details.append(f"{option.details['bus_type']} bus")
+        detail_text = f" ({', '.join(details)})" if details else ""
+        lines.append(
+            f"  {option.leg}: {option.mode} via {option.provider}{detail_text}, "
+            f"{option.from_}->{option.to}, {option.depart}-{option.arrive}, "
+            f"{option.duration}, INR {option.price}"
+        )
+    lines.append(f"  Total selected transport cost: INR {total}")
     return "\n".join(lines)

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ai.agent import run_travel_agent
-from ai.schemas import TravelAgentChatResponse
+from ai.schemas import TravelAgentChatResponse, TransportSelection
 from auth.dependencies import get_current_user
 from auth.models import User
 from chat.service import load_chat_history, save_chat_turn
@@ -20,6 +20,7 @@ router = APIRouter(prefix="/api/agent")
 class ChatRequest(BaseModel):
     message: str
     session_id: str
+    transport_selection: TransportSelection | None = None
 
 
 @router.post("/chat", response_model=TravelAgentChatResponse)
@@ -36,7 +37,12 @@ async def chat(
         for r in history_rows
     ]
 
-    response = await run_travel_agent(current_user.id, body.message, history=lc_history)
+    response = await run_travel_agent(
+        current_user.id,
+        body.message,
+        history=lc_history,
+        transport_selection=body.transport_selection,
+    )
 
     await save_chat_turn(session, body.session_id, current_user.id, body.message, response.assistant_message)
 

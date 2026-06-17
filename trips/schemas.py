@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from ai.schemas.travel import BudgetBreakdown, ItineraryDay
+from ai.schemas.transport import TransportOption
 from ai.schemas.weather import DailyForecast, TripRisk
 
 
@@ -24,6 +25,7 @@ class TripCreate(BaseModel):
     itinerary: list[ItineraryDay] = Field(default_factory=list)
     hotel_options: list = Field(default_factory=list)
     flight_options: list = Field(default_factory=list)
+    transport_options: list[TransportOption] = Field(default_factory=list)
     daily_forecast: list[DailyForecast] = Field(default_factory=list)
     trip_risks: list[TripRisk] = Field(default_factory=list)
     verification_tips: list[str] = Field(default_factory=list)
@@ -48,6 +50,7 @@ class TripResponse(BaseModel):
     itinerary: list[ItineraryDay]
     hotel_options: list = Field(default_factory=list)
     flight_options: list = Field(default_factory=list)
+    transport_options: list[TransportOption] = Field(default_factory=list)
     daily_forecast: list[DailyForecast] = Field(default_factory=list)
     trip_risks: list[TripRisk] = Field(default_factory=list)
     verification_tips: list[str] = Field(default_factory=list)

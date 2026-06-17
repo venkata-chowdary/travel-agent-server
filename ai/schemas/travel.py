@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from ai.schemas.transport import TransportChoiceResponse, TransportOption
 from ai.schemas.weather import DailyForecast, TripRisk
 
 
@@ -73,6 +74,7 @@ class TravelAgentStructuredResponse(BaseModel):
     )
     hotel_options: list = Field(default_factory=list)
     flight_options: list = Field(default_factory=list)
+    transport_options: list[TransportOption] = Field(default_factory=list)
 
     # ── WeatherAgent passthrough (injected from state, not re-generated) ──────
     daily_forecast: list[DailyForecast] = Field(default_factory=list)
@@ -82,7 +84,8 @@ class TravelAgentStructuredResponse(BaseModel):
 
 
 class TravelAgentChatResponse(BaseModel):
-    response_type: Literal["clarification", "trip_plan"]
+    response_type: Literal["clarification", "transport_choice", "trip_plan"]
     assistant_message: str
     questions: list[str] = Field(default_factory=list)
+    transport_choice: TransportChoiceResponse | None = None
     trip_plan: TravelAgentStructuredResponse | None = None

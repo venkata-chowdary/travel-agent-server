@@ -12,10 +12,19 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 
 from ai.agents.preference_agent import build_preference_executor
+from ai.agents.transport_agent import build_transport_choice
 from ai.agents.weather_agent import build_weather_executor, _unavailable_forecast
-from ai.helpers import GeminiClient, format_preferences_block, format_weather_block
+from ai.helpers import GeminiClient, format_preferences_block, format_transport_block, format_weather_block
 from ai.prompts import MAIN_TRAVEL_AGENT_SYSTEM_PROMPT, SUPERVISOR_PROMPT
-from ai.schemas import PreferenceContext, TravelAgentChatResponse, TravelAgentStructuredResponse, WeatherForecastResponse
+from ai.schemas import (
+    PreferenceContext,
+    TravelAgentChatResponse,
+    TravelAgentStructuredResponse,
+    TransportChoiceResponse,
+    TransportOption,
+    TransportSelection,
+    WeatherForecastResponse,
+)
 from ai.schemas.travel import TravelPlanLLMOutput
 from config import settings
 
@@ -30,8 +39,12 @@ _llm = GeminiClient(model=settings.llm_model, temperature=0)
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class SupervisorDecision(BaseModel):
-    next: Literal["preference_agent", "clarifier", "weather_agent", "planner"] = Field(
+    next: Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "planner"] = Field(
         description="Which agent to invoke next."
+    )
+    origin: str | None = Field(
+        default=None,
+        description="Departure city extracted from the conversation. Null if not mentioned.",
     )
     destination: str | None = Field(
         default=None,
@@ -56,6 +69,7 @@ class TravelState(TypedDict):
     user_message: str
     messages: Annotated[list[BaseMessage], add_messages]
     next: str
+    origin: str | None
     destination: str | None
     trip_duration_days: int | None
     trip_start_date: str | None
@@ -63,6 +77,8 @@ class TravelState(TypedDict):
     clarification_response: TravelAgentChatResponse | None
     preference_context: PreferenceContext | None
     weather_forecast: WeatherForecastResponse | None
+    transport_choice: TransportChoiceResponse | None
+    selected_transport_options: list[TransportOption] | None
     structured_response: TravelAgentStructuredResponse | None
 
 
@@ -88,6 +104,15 @@ def _state_summary(state: TravelState) -> list[BaseMessage]:
     else:
         lines.append("- clarification: NOT YET checked")
 
+    if state.get("selected_transport_options"):
+        lines.append("- selected_transport_options: collected")
+    elif state.get("transport_choice"):
+        lines.append("- transport_choice: waiting for user selection")
+    elif state.get("origin") and state.get("destination"):
+        lines.append(f"- transport_choice: NOT YET collected (origin: {state['origin']})")
+    else:
+        lines.append("- transport_choice: N/A (missing origin or destination)")
+
     return [SystemMessage(content="Current state:\n" + "\n".join(lines))]
 
 
@@ -101,11 +126,59 @@ def _trip_dates(state: TravelState) -> list[str]:
     return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
 
 
+def _origin_from_state(state: TravelState) -> str | None:
+    if state.get("origin"):
+        return state["origin"]
+    prefs = state.get("preference_context")
+    return prefs.home_city if prefs and prefs.home_city else None
+
+
+def _apply_transport_budget(
+    result: TravelAgentStructuredResponse,
+    selected_options: list[TransportOption] | None,
+) -> TravelAgentStructuredResponse:
+    if not selected_options:
+        return result
+
+    transport_total = sum(option.price for option in selected_options)
+    budget = result.budget.model_copy(update={
+        "flights": transport_total,
+        "total": transport_total + result.budget.stay + result.budget.activities + result.budget.food,
+    })
+    return result.model_copy(update={
+        "budget": budget,
+        "transport_options": selected_options,
+        "flight_options": [
+            _transport_option_to_flight_option(option)
+            for option in selected_options
+            if option.mode == "flight"
+        ],
+    })
+
+
+def _transport_option_to_flight_option(option: TransportOption) -> dict:
+    return {
+        "id": option.id,
+        "airline": option.provider,
+        "from": option.from_,
+        "to": option.to,
+        "depart": option.depart,
+        "arrive": option.arrive,
+        "duration": option.duration,
+        "price": option.price,
+        "stops": 0,
+    }
+
+
 def _clarification_response(state: TravelState) -> TravelAgentChatResponse | None:
     questions: list[str] = []
+    origin = _origin_from_state(state)
 
     if not state.get("destination"):
         questions.append("Where do you want to go, or what kind of place are you in the mood for?")
+
+    if not origin:
+        questions.append("Where will you be starting from?")
 
     if state.get("trip_duration_days") is None:
         questions.append("How many days, or which dates, should I plan around?")
@@ -148,15 +221,35 @@ async def supervisor_node(state: TravelState) -> dict:
         HumanMessage(content=state["user_message"]),
         *_state_summary(state),
     ])
-    logger.info("Supervisor → %s (destination: %s, days: %s)",
-                decision.next, decision.destination, decision.trip_duration_days)
+    logger.info(
+        "Supervisor decision: %s (origin: %s, destination: %s, days: %s)",
+        decision.next,
+        decision.origin,
+        decision.destination,
+        decision.trip_duration_days,
+    )
     next_step = decision.next
+    origin = decision.origin or state.get("origin") or _origin_from_state(state)
+    destination = decision.destination or state.get("destination")
+
     if state.get("preference_context") and not state.get("clarification_checked"):
         next_step = "clarifier"
+    elif (
+        state.get("preference_context")
+        and state.get("weather_forecast")
+        and not state.get("selected_transport_options")
+        and not state.get("transport_choice")
+        and origin
+        and destination
+    ):
+        next_step = "transport_agent"
+    elif state.get("selected_transport_options"):
+        next_step = "planner"
 
     return {
         "next": next_step,
-        "destination": decision.destination or state.get("destination"),
+        "origin": origin,
+        "destination": destination,
         "trip_duration_days": decision.trip_duration_days or state.get("trip_duration_days"),
         "trip_start_date": decision.trip_start_date or state.get("trip_start_date"),
     }
@@ -208,6 +301,31 @@ async def weather_agent_node(state: TravelState) -> dict:
         return {"weather_forecast": _unavailable_forecast(destination)}
 
 
+async def transport_agent_node(state: TravelState) -> dict:
+    origin = _origin_from_state(state)
+    destination = state.get("destination")
+    trip_dates = _trip_dates(state)
+    if not origin or not destination:
+        logger.info("TransportAgent skipped; missing origin or destination")
+        return {}
+
+    logger.info("TransportAgent running — %s to %s on %s", origin, destination, trip_dates[0])
+    choice = build_transport_choice(
+        origin=origin,
+        destination=destination,
+        start_date=trip_dates[0],
+        days=state.get("trip_duration_days") or len(trip_dates),
+        travelers=1,
+        preferences=state.get("preference_context"),
+    )
+    logger.info(
+        "TransportAgent found %s outbound and %s return option(s)",
+        len(choice.outbound_options),
+        len(choice.return_options),
+    )
+    return {"transport_choice": choice}
+
+
 async def planner_node(state: TravelState) -> dict:
     logger.info("Planner generating trip plan...")
     date_line = f"\nToday is {datetime.now(timezone.utc).strftime('%A, %Y-%m-%d')} (UTC)."
@@ -216,6 +334,7 @@ async def planner_node(state: TravelState) -> dict:
         + date_line
         + format_preferences_block(state.get("preference_context"))
         + format_weather_block(state.get("weather_forecast"))
+        + format_transport_block(state.get("selected_transport_options"))
     )
     messages: list[BaseMessage] = [SystemMessage(content=system_prompt)]
     if state.get("messages"):
@@ -229,8 +348,14 @@ async def planner_node(state: TravelState) -> dict:
     result = TravelAgentStructuredResponse(**plan.model_dump())
 
     updates: dict = {}
-    if state.get("preference_context"):
-        updates["origin"] = state["preference_context"].home_city
+    origin = _origin_from_state(state)
+    if origin:
+        updates["origin"] = origin
+
+    trip_dates = _trip_dates(state)
+    if trip_dates:
+        updates["start_date"] = trip_dates[0]
+        updates["end_date"] = trip_dates[-1]
 
     wf = state.get("weather_forecast")
     if wf and wf.daily_forecast:
@@ -241,6 +366,8 @@ async def planner_node(state: TravelState) -> dict:
 
     if updates:
         result = result.model_copy(update=updates)
+
+    result = _apply_transport_budget(result, state.get("selected_transport_options"))
 
     logger.info("Planner done — %s, %s day(s), budget %s", result.destination, result.days, result.budget.total)
     return {"structured_response": result}
@@ -264,6 +391,7 @@ graph.add_node("supervisor", supervisor_node)
 graph.add_node("preference_agent", preference_agent_node)
 graph.add_node("clarifier", clarifier_node)
 graph.add_node("weather_agent", weather_agent_node)
+graph.add_node("transport_agent", transport_agent_node)
 graph.add_node("planner", planner_node)
 
 graph.add_edge(START, "supervisor")
@@ -273,10 +401,12 @@ graph.add_conditional_edges("clarifier", _route_after_clarifier, {
 })
 graph.add_edge("preference_agent", "supervisor")
 graph.add_edge("weather_agent", "supervisor")
+graph.add_edge("transport_agent", END)
 graph.add_conditional_edges("supervisor", _route, {
     "preference_agent": "preference_agent",
     "clarifier": "clarifier",
     "weather_agent": "weather_agent",
+    "transport_agent": "transport_agent",
     "planner": "planner",
 })
 graph.add_edge("planner", END)
@@ -290,25 +420,38 @@ async def run_travel_agent(
     user_id: str,
     user_message: str,
     history: list[BaseMessage] | None = None,
+    transport_selection: TransportSelection | None = None,
 ) -> TravelAgentChatResponse:
     is_followup = any(isinstance(m, AIMessage) for m in (history or []))
+    selected_options = transport_selection.selected_options if transport_selection else None
 
     result = await agent.ainvoke({
         "user_id": user_id,
         "user_message": user_message,
         "messages": history or [],
         "next": "",
-        "destination": None,
-        "trip_duration_days": None,
-        "trip_start_date": None,
+        "origin": transport_selection.origin if transport_selection else None,
+        "destination": transport_selection.destination if transport_selection else None,
+        "trip_duration_days": transport_selection.days if transport_selection else None,
+        "trip_start_date": transport_selection.start_date if transport_selection else None,
         "clarification_checked": False,
         "clarification_response": None,
-        "preference_context": PreferenceContext() if is_followup else None,
+        "preference_context": None if transport_selection else (PreferenceContext() if is_followup else None),
         "weather_forecast": None,
+        "transport_choice": None,
+        "selected_transport_options": selected_options,
         "structured_response": None,
     })
     if result.get("clarification_response"):
         return result["clarification_response"]
+
+    if result.get("transport_choice"):
+        choice = result["transport_choice"]
+        return TravelAgentChatResponse(
+            response_type="transport_choice",
+            assistant_message=choice.summary,
+            transport_choice=choice,
+        )
 
     trip_plan = result["structured_response"]
     return TravelAgentChatResponse(

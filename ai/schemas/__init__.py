@@ -1,5 +1,6 @@
 from .flight import FlightOption, FlightSearchResult
 from .preferences import PastTrip, PreferenceContext, TravelPreferences, UserProfile
+from .transport import TransportChoiceResponse, TransportOption, TransportSelection
 from .travel import (
     BudgetBreakdown,
     ItineraryDay,
@@ -21,6 +22,9 @@ __all__ = [
     "TravelAgentChatResponse",
     "TravelAgentStructuredResponse",
     "TravelPlanLLMOutput",
+    "TransportChoiceResponse",
+    "TransportOption",
+    "TransportSelection",
     "PastTrip",
     "PreferenceContext",
     "TravelPreferences",

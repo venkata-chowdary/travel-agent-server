@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -32,6 +33,30 @@ class TripCreate(BaseModel):
     created_at: datetime | None = None
 
 
+class TripTransportOptionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    session_id: str
+    trip_id: UUID | None = None
+    option_id: str
+    mode: str
+    leg: str
+    provider: str
+    from_city: str
+    to_city: str
+    depart: str
+    arrive: str
+    duration: str
+    price: int
+    available_seats: int
+    rating: float | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
+    status: str
+    is_recommended: bool
+    created_at: datetime
+
+
 class TripResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -51,6 +76,7 @@ class TripResponse(BaseModel):
     hotel_options: list = Field(default_factory=list)
     flight_options: list = Field(default_factory=list)
     transport_options: list[TransportOption] = Field(default_factory=list)
+    transport_status: str = "not_searched"
     daily_forecast: list[DailyForecast] = Field(default_factory=list)
     trip_risks: list[TripRisk] = Field(default_factory=list)
     verification_tips: list[str] = Field(default_factory=list)

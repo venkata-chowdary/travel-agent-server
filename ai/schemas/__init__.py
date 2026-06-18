@@ -1,4 +1,4 @@
-from .flight import FlightOption, FlightSearchResult
+from .flight import FlightOption
 from .preferences import PastTrip, PreferenceContext, TravelPreferences, UserProfile
 from .transport import TransportChoiceResponse, TransportOption, TransportSelection
 from .travel import (
@@ -8,7 +8,6 @@ from .travel import (
     TravelAgentChatResponse,
     TravelAgentStructuredResponse,
     TravelPlanLLMOutput,
-    WeatherNotes,
 )
 from .weather import DailyForecast, TripRisk, WeatherForecastResponse
 
@@ -16,7 +15,6 @@ __all__ = [
     "BudgetBreakdown",
     "DailyForecast",
     "FlightOption",
-    "FlightSearchResult",
     "ItineraryDay",
     "ItineraryItem",
     "TravelAgentChatResponse",
@@ -31,5 +29,4 @@ __all__ = [
     "UserProfile",
     "TripRisk",
     "WeatherForecastResponse",
-    "WeatherNotes",
 ]

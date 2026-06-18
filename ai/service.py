@@ -5,7 +5,6 @@ from uuid import UUID
 
 from sqlalchemy import select
 
-from ai.schemas import TravelPreferences
 from auth.models import User
 from db import SessionLocal
 from trips.models import Trip
@@ -61,8 +60,3 @@ async def fetch_user_preferences(user_id: str | UUID) -> dict[str, Any]:
         return normalize_preference_payload(preferences)
 
     return {}
-
-
-async def fetch_travel_preferences(user_id: str | UUID) -> TravelPreferences:
-    raw = await fetch_user_preferences(user_id)
-    return TravelPreferences.model_validate(raw)

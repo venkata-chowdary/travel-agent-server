@@ -13,7 +13,18 @@ from auth.dependencies import get_current_user
 from auth.models import User
 from chat.service import load_chat_history, save_chat_turn
 from db import get_db_session
-from trips.service import create_trip, get_trip, update_trip_from_plan
+from trips.schemas import TripTransportOptionResponse
+from trips.service import (
+    create_draft_trip,
+    create_trip,
+    get_draft_trip_by_session,
+    get_session_transport_options,
+    get_trip,
+    get_trip_by_session,
+    link_transport_options_to_trip,
+    save_transport_options,
+    update_trip_from_plan,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -119,6 +130,11 @@ async def chat(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="trip not found")
         lc_history.insert(0, _trip_context_message(target_trip))
 
+    # Release the DB connection back to the pool before the long AI call so
+    # it doesn't time out while the agents are running (~minutes).  The session
+    # will acquire a fresh connection when it needs to write afterwards.
+    await session.close()
+
     response = await run_travel_agent(
         current_user.id,
         body.message,
@@ -146,13 +162,64 @@ async def chat(
         assistant_payload=assistant_payload,
     )
 
+    if response.response_type == "transport_choice" and response.transport_choice is not None:
+        if body.target_trip_id is not None:
+            # Editing flow — trip already exists; link options directly to it.
+            trip_id_for_transport = body.target_trip_id
+        else:
+            # New trip flow — clarifier just passed; create the draft trip stub now.
+            draft = await create_draft_trip(
+                session, current_user.id, body.session_id, response.transport_choice
+            )
+            trip_id_for_transport = draft.id
+        await save_transport_options(
+            session, body.session_id, trip_id_for_transport, response.transport_choice
+        )
+
     if response.response_type == "trip_plan" and response.trip_plan is not None:
         if body.target_trip_id is not None:
-            updated_trip = await update_trip_from_plan(session, current_user.id, body.target_trip_id, response.trip_plan)
-            if updated_trip is None:
+            # Editing an existing saved trip.
+            finalized = await update_trip_from_plan(
+                session, current_user.id, body.target_trip_id, response.trip_plan
+            )
+            if finalized is None:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="trip not found")
         else:
-            await create_trip(session, current_user.id, response.trip_plan)
+            draft = await get_draft_trip_by_session(session, current_user.id, body.session_id)
+            if draft is not None:
+                # Transport options were shown — upgrade the draft trip in-place.
+                finalized = await update_trip_from_plan(
+                    session, current_user.id, draft.id, response.trip_plan
+                )
+            else:
+                # Transport was skipped/not applicable.
+                # Guard against duplicate trips if the planner retries in the same session.
+                existing = await get_trip_by_session(session, current_user.id, body.session_id)
+                if existing is not None:
+                    finalized = await update_trip_from_plan(
+                        session, current_user.id, existing.id, response.trip_plan
+                    )
+                else:
+                    finalized = await create_trip(
+                        session, current_user.id, response.trip_plan, session_id=body.session_id
+                    )
+        await link_transport_options_to_trip(
+            session, finalized.id, response.trip_plan.transport_options
+        )
 
     logger.info("Chat response ready [session=%s]", body.session_id[:8])
     return response
+
+
+@router.get("/transport/{session_id}", response_model=list[TripTransportOptionResponse])
+async def pending_transport_options(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[TripTransportOptionResponse]:
+    """Return available (unselected) transport options for a session.
+
+    Frontend calls this on session load to auto-resume a transport choice that was
+    generated but never completed (lost connection, logout, etc.).
+    """
+    return await get_session_transport_options(session, session_id, current_user.id)

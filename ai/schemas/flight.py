@@ -31,9 +31,3 @@ class FlightOption(BaseModel):
     duration: str = Field(min_length=1)  # "2h 15m"
     price: int = Field(ge=0)
     stops: int = Field(default=0, ge=0)
-
-
-class FlightSearchResult(BaseModel):
-    route: str = Field(min_length=1)
-    options: list[FlightOption] = Field(default_factory=list)
-    recommendation: str = Field(min_length=1)

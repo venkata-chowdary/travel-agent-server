@@ -9,8 +9,8 @@ from auth.dependencies import get_current_user
 from auth.models import User
 from db import get_db_session
 from pydantic import BaseModel
-from trips.schemas import TripCreate, TripResponse
-from trips.service import create_trip, delete_trip, get_trip, list_trips, update_trip_status
+from trips.schemas import TripCreate, TripResponse, TripTransportOptionResponse
+from trips.service import create_trip, delete_trip, get_trip, get_trip_transport_options, list_trips, update_trip_status
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/trips", tags=["Trips"])
@@ -64,6 +64,18 @@ async def update_current_user_trip_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="trip not found")
     logger.info("Trip %s status updated to %s by user %s", trip_id, payload.status, current_user.id)
     return trip
+
+
+@router.get("/{trip_id}/transport", response_model=list[TripTransportOptionResponse])
+async def get_trip_transport(
+    trip_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[TripTransportOptionResponse]:
+    trip = await get_trip(session, current_user.id, trip_id)
+    if trip is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="trip not found")
+    return await get_trip_transport_options(session, trip_id)
 
 
 @router.delete("/{trip_id}", status_code=status.HTTP_204_NO_CONTENT)

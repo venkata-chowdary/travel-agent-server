@@ -33,11 +33,6 @@ class BudgetBreakdown(BaseModel):
     currency: str = Field(min_length=1, max_length=8)
 
 
-class WeatherNotes(BaseModel):
-    summary: str = Field(min_length=1)
-    confidence: Literal["low", "medium", "high"] = "medium"
-
-
 class TravelPlanLLMOutput(BaseModel):
     """What the LLM generates — all required, no server-side defaults."""
     destination: str = Field(min_length=1)

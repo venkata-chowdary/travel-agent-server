@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid as _uuid
 from typing import Any
 from uuid import UUID
 
@@ -155,27 +156,51 @@ async def create_draft_trip(
 ) -> Trip:
     """Create a minimal trip stub as soon as the clarifier passes and transport options are ready.
 
-    The draft is upgraded to a full trip when the planner runs (update_trip_from_plan).
-    Using a placeholder summary and zero budget because the planner hasn't run yet.
+    Uses INSERT … ON CONFLICT DO UPDATE so that concurrent requests (double-tap, retry)
+    targeting the same (user_id, session_id) draft slot converge on a single row rather
+    than creating duplicates.
     """
-    from ai.schemas.travel import BudgetBreakdown
-    draft = Trip(
-        user_id=UUID(str(user_id)),
-        session_id=session_id,
-        destination=transport_choice.destination,
-        origin=transport_choice.origin,
-        start_date=transport_choice.start_date,
-        end_date=transport_choice.end_date,
-        days=transport_choice.days,
-        travelers=transport_choice.travelers,
-        status="draft",
-        summary=f"Trip to {transport_choice.destination}",
-        budget={"flights": 0, "stay": 0, "activities": 0, "food": 0, "total": 0, "currency": "₹"},
+    stmt = (
+        pg_insert(Trip)
+        .values(
+            id=_uuid.uuid4(),
+            user_id=UUID(str(user_id)),
+            session_id=session_id,
+            destination=transport_choice.destination,
+            origin=transport_choice.origin,
+            start_date=transport_choice.start_date,
+            end_date=transport_choice.end_date,
+            days=transport_choice.days,
+            travelers=transport_choice.travelers,
+            status="draft",
+            summary=f"Trip to {transport_choice.destination}",
+            budget={"flights": 0, "stay": 0, "activities": 0, "food": 0, "total": 0, "currency": "₹"},
+        )
+        .on_conflict_do_update(
+            index_elements=["user_id", "session_id"],
+            index_where=Trip.status == "draft",
+            set_=dict(
+                destination=transport_choice.destination,
+                origin=transport_choice.origin,
+                start_date=transport_choice.start_date,
+                end_date=transport_choice.end_date,
+                days=transport_choice.days,
+                travelers=transport_choice.travelers,
+                summary=f"Trip to {transport_choice.destination}",
+            ),
+        )
     )
-    session.add(draft)
+    await session.execute(stmt)
     await session.commit()
-    await session.refresh(draft)
-    return draft
+
+    result = await session.execute(
+        select(Trip).where(
+            Trip.user_id == UUID(str(user_id)),
+            Trip.session_id == session_id,
+            Trip.status == "draft",
+        )
+    )
+    return result.scalars().first()
 
 
 async def get_draft_trip_by_session(

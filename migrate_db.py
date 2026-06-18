@@ -75,6 +75,12 @@ async def main():
             await conn.execute(
                 text("CREATE INDEX IF NOT EXISTS ix_chat_messages_user_id ON chat_messages(user_id);")
             )
+            print("Running migration to add partial unique index for draft trips (BUG-02)...")
+            await conn.execute(text("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_trips_draft_user_session
+                    ON trips (user_id, session_id)
+                    WHERE status = 'draft';
+            """))
             print("Migration complete!")
     finally:
         await close_db()

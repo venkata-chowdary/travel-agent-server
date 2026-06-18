@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func, text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -56,6 +56,16 @@ class Trip(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         server_default=func.now(),
+    )
+
+    __table_args__ = (
+        Index(
+            "uq_trips_draft_user_session",
+            "user_id",
+            "session_id",
+            unique=True,
+            postgresql_where=text("status = 'draft'"),
+        ),
     )
 
 

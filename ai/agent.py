@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from langchain_core.messages import BaseMessage
 from langgraph.graph import END, START, StateGraph
 
-from ai.nodes import (
+from ai.agents import (
     clarifier_node,
     planner_node,
     preference_agent_node,

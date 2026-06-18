@@ -6,6 +6,7 @@ from typing import Any
 
 from ai.schemas import PreferenceContext
 from ai.schemas.transport import TransportChoiceResponse, TransportLeg, TransportOption
+from ai.state import TravelState, _origin_from_state, _status_update, _transport_has_options, _trip_dates
 from mock_apis.services import search_buses, search_flights, search_trains
 
 logger = logging.getLogger(__name__)
@@ -252,3 +253,32 @@ def _rank_key(option: TransportOption, preferred_transport: list[str]) -> tuple[
     preference_penalty = 0 if option.mode in preference_text else 1
     rating_penalty = -(option.rating or 0)
     return (preference_penalty, option.price, rating_penalty, option.available_seats * -1)
+
+
+async def transport_agent_node(state: TravelState) -> dict:
+    origin = _origin_from_state(state)
+    destination = state.get("destination")
+    trip_dates = _trip_dates(state)
+    if not origin or not destination:
+        logger.info("TransportAgent skipped; missing origin or destination")
+        return {"workflow_statuses": _status_update(state, "transport", "failed")}
+
+    logger.info("TransportAgent running — %s to %s on %s", origin, destination, trip_dates[0])
+    choice = build_transport_choice(
+        origin=origin,
+        destination=destination,
+        start_date=trip_dates[0],
+        days=state.get("trip_duration_days") or len(trip_dates),
+        travelers=1,
+        preferences=state.get("preference_context"),
+    )
+    logger.info(
+        "TransportAgent found %s outbound and %s return option(s)",
+        len(choice.outbound_options), len(choice.return_options),
+    )
+    return {
+        "transport_choice": choice,
+        "workflow_statuses": _status_update(
+            state, "transport", "succeeded" if _transport_has_options(choice) else "empty"
+        ),
+    }

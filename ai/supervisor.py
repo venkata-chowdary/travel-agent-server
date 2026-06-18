@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import cast
+from typing import Literal, cast
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langgraph.graph import END
+from langgraph.types import Command
 
 from ai.helpers import GeminiClient
 from ai.prompts import SUPERVISOR_PROMPT
@@ -157,9 +159,12 @@ def _incompatible_decision_response(issue: str) -> TravelAgentChatResponse:
     )
 
 
+_SupervisorDest = Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "planner"]
+
+
 # ── Node ──────────────────────────────────────────────────────────────────────
 
-async def supervisor_node(state: TravelState) -> dict:
+async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
     logger.info("Supervisor running — deciding next step")
     today = datetime.now(timezone.utc).strftime("%A, %Y-%m-%d")
     decision = await _ask_supervisor(state, today)
@@ -204,14 +209,12 @@ async def supervisor_node(state: TravelState) -> dict:
         validation_issue = _validate_supervisor_decision(decision, origin, destination, trip_duration_days, statuses)
 
     if validation_issue:
-        return {
-            "next": decision.next,
+        return Command(goto=END, update={
             "workflow_statuses": statuses,
             "clarification_response": _incompatible_decision_response(validation_issue),
-        }
+        })
 
     updates: dict = {
-        "next": decision.next,
         "origin": origin,
         "destination": destination,
         "trip_duration_days": trip_duration_days,
@@ -236,4 +239,4 @@ async def supervisor_node(state: TravelState) -> dict:
         updates["selected_transport_options"] = None
     if decision.next == "planner" and not state.get("selected_transport_options"):
         updates["transport_choice"] = None
-    return updates
+    return Command(goto=decision.next, update=updates)

@@ -81,7 +81,6 @@ class TravelState(TypedDict):
     user_id: str
     user_message: str
     messages: list[BaseMessage]
-    next: str
     origin: str | None
     destination: str | None
     trip_duration_days: int | None

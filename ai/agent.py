@@ -47,14 +47,6 @@ graph.add_conditional_edges("clarifier", lambda s: END if s.get("clarification_r
 graph.add_edge("preference_agent", "supervisor")
 graph.add_edge("weather_agent", "supervisor")
 graph.add_edge("transport_agent", END)
-graph.add_conditional_edges("supervisor", lambda s: END if s.get("clarification_response") else s["next"], {
-    END: END,
-    "preference_agent": "preference_agent",
-    "clarifier": "clarifier",
-    "weather_agent": "weather_agent",
-    "transport_agent": "transport_agent",
-    "planner": "planner",
-})
 graph.add_edge("planner", END)
 
 _checkpoint_pool: Any | None = None
@@ -143,7 +135,6 @@ async def run_travel_agent(
         "user_id": str(user_id),
         "user_message": user_message,
         "messages": history or [],
-        "next": "",
         "clarification_checked": False,
         "clarification_response": None,
         "structured_response": None,

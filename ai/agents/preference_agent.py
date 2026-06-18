@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import logging
-import sys
 
-from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
 
@@ -12,9 +10,6 @@ from ai.schemas.preferences import PreferenceContext
 from ai.tools.preference_tools import make_preference_tools
 
 logger = logging.getLogger(__name__)
-
-load_dotenv()
-sys.stdout.reconfigure(encoding="utf-8")
 
 
 def build_preference_executor(user_id: str, llm: BaseChatModel):

@@ -55,6 +55,27 @@ def _err(msg: str) -> dict[str, Any]:
     return {"success": False, "error": msg}
 
 
+def _route_templates(data: list[dict[str, Any]], source: str, destination: str) -> list[dict[str, Any]]:
+    exact = filter_by_route(data, source, destination)
+    if exact:
+        return exact
+
+    reverse = filter_by_route(data, destination, source)
+    if not reverse:
+        return []
+
+    src = source.upper().strip()
+    dst = destination.upper().strip()
+    mirrored = []
+    for record in reverse:
+        item = dict(record)
+        item["id"] = f"{item.get('id', 'route')}_rev"
+        item["source"] = src
+        item["destination"] = dst
+        mirrored.append(item)
+    return mirrored
+
+
 # ---------------------------------------------------------------------------
 # Flight search
 # ---------------------------------------------------------------------------
@@ -73,7 +94,7 @@ def search_flights(
         return _err("Missing required params: source, destination, date")
 
     data = _load("flights")
-    results = filter_by_route(data, source, destination)
+    results = _route_templates(data, source, destination)
     results = filter_available(results)
 
     if airline:
@@ -120,7 +141,7 @@ def search_trains(
         return _err("Missing required params: source, destination, date")
 
     data = _load("trains")
-    results = filter_by_route(data, source, destination)
+    results = _route_templates(data, source, destination)
     results = filter_available(results)
 
     flattened: list[dict[str, Any]] = []
@@ -173,7 +194,7 @@ def search_buses(
         return _err("Missing required params: source, destination, date")
 
     data = _load("buses")
-    results = filter_by_route(data, source, destination)
+    results = _route_templates(data, source, destination)
     results = filter_available(results)
 
     if bus_type:

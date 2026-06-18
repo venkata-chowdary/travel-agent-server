@@ -12,6 +12,13 @@ from trips.models import Trip
 from trips.service import trip_to_history
 
 
+def normalize_preference_payload(preferences: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(preferences)
+    if not normalized.get("origin") and normalized.get("home_city"):
+        normalized["origin"] = normalized["home_city"]
+    return normalized
+
+
 async def fetch_user_profile(user_id: str | UUID) -> dict[str, Any]:
     """Return name and email for the given user."""
     parsed_user_id = UUID(str(user_id))
@@ -51,7 +58,7 @@ async def fetch_user_preferences(user_id: str | UUID) -> dict[str, Any]:
         preferences = result.scalar_one_or_none()
 
     if isinstance(preferences, dict):
-        return preferences
+        return normalize_preference_payload(preferences)
 
     return {}
 

@@ -146,8 +146,10 @@ def test_chat_history_returns_current_user_session_messages(monkeypatch):
 def test_list_create_detail_and_delete_trips(monkeypatch):
     trip = make_trip()
 
-    async def fake_list_trips(session, user_id):
+    async def fake_list_trips(session, user_id, limit=50, offset=0):
         assert user_id == USER_ID
+        assert limit == 50
+        assert offset == 0
         return [trip]
 
     async def fake_create_trip(session, user_id, payload):

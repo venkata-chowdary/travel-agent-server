@@ -23,7 +23,7 @@ def _format_preference_context(ctx: PreferenceContext) -> str:
         "Food preference": ctx.food_preference,
         "Hotel preference": ctx.hotel_preference,
         "Avoid": ", ".join(ctx.avoid) if ctx.avoid else None,
-        "Home city": ctx.home_city,
+        "Origin": ctx.origin,
         "Preferred currency": ctx.currency,
         "Memory confidence": f"{ctx.memory_confidence:.0%}" if ctx.memory_confidence else None,
     }
@@ -41,7 +41,7 @@ def _format_travel_preferences(prefs: TravelPreferences) -> str:
         "Dietary restrictions": ", ".join(prefs.dietary_restrictions) if prefs.dietary_restrictions else None,
         "Accommodation": prefs.accommodation_type,
         "Trip pace": prefs.pace,
-        "Home city": prefs.home_city,
+        "Origin": prefs.origin,
         "Preferred currency": prefs.currency,
     }
     set_fields = {k: v for k, v in fields.items() if v is not None}

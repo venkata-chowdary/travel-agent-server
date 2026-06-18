@@ -17,16 +17,12 @@ def _dump(value: Any) -> Any:
     return value
 
 
-def _trip_create_from_plan(plan: TravelAgentStructuredResponse) -> TripCreate:
-    return TripCreate.model_validate(plan.model_dump(mode="json"))
-
-
 async def create_trip(
     session: AsyncSession,
     user_id: str | UUID,
     payload: TripCreate | TravelAgentStructuredResponse,
 ) -> Trip:
-    trip_data = _trip_create_from_plan(payload) if isinstance(payload, TravelAgentStructuredResponse) else payload
+    trip_data = TripCreate.model_validate(payload.model_dump(mode="json")) if isinstance(payload, TravelAgentStructuredResponse) else payload
 
     trip = Trip(
         **({"id": trip_data.id} if trip_data.id is not None else {}),
@@ -86,7 +82,7 @@ async def update_trip_from_plan(
     if trip is None:
         return None
 
-    trip_data = _trip_create_from_plan(payload) if isinstance(payload, TravelAgentStructuredResponse) else payload
+    trip_data = TripCreate.model_validate(payload.model_dump(mode="json")) if isinstance(payload, TravelAgentStructuredResponse) else payload
     _apply_trip_data(trip, trip_data)
     session.add(trip)
     await session.commit()
@@ -94,11 +90,18 @@ async def update_trip_from_plan(
     return trip
 
 
-async def list_trips(session: AsyncSession, user_id: str | UUID) -> list[Trip]:
+async def list_trips(
+    session: AsyncSession,
+    user_id: str | UUID,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[Trip]:
     result = await session.execute(
         select(Trip)
         .where(Trip.user_id == UUID(str(user_id)))
         .order_by(Trip.created_at.desc())
+        .limit(limit)
+        .offset(offset)
     )
     return list(result.scalars().all())
 
@@ -111,6 +114,22 @@ async def get_trip(session: AsyncSession, user_id: str | UUID, trip_id: str | UU
         )
     )
     return result.scalars().first()
+
+
+async def update_trip_status(
+    session: AsyncSession,
+    user_id: str | UUID,
+    trip_id: str | UUID,
+    new_status: str,
+) -> Trip | None:
+    trip = await get_trip(session, user_id, trip_id)
+    if trip is None:
+        return None
+    trip.status = new_status
+    session.add(trip)
+    await session.commit()
+    await session.refresh(trip)
+    return trip
 
 
 async def delete_trip(session: AsyncSession, user_id: str | UUID, trip_id: str | UUID) -> bool:
@@ -138,7 +157,8 @@ def trip_to_history(trip: Trip) -> dict[str, Any]:
     return {
         "destination": trip.destination,
         "duration_days": trip.days,
-        "travel_style": trip.status,
+        "travel_style": "",
+        "status": trip.status,
         "accommodation": "saved trip plan",
         "transport": sorted(transports),
         "budget_per_day_inr": per_day,

@@ -3,19 +3,20 @@ from __future__ import annotations
 import logging
 import sys
 from datetime import date, datetime, timedelta, timezone
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, cast
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
+import psycopg
 from dotenv import load_dotenv
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from ai.agents.preference_agent import build_preference_executor
 from ai.agents.transport_agent import build_transport_choice
 from ai.agents.weather_agent import build_weather_executor, _unavailable_forecast
 from ai.helpers import GeminiClient, format_preferences_block, format_transport_block, format_weather_block
-from ai.prompts import MAIN_TRAVEL_AGENT_SYSTEM_PROMPT, SUPERVISOR_PROMPT
+from ai.prompts import CLARIFIER_PROMPT, MAIN_TRAVEL_AGENT_SYSTEM_PROMPT, SUPERVISOR_PROMPT
 from ai.schemas import (
     PreferenceContext,
     TravelAgentChatResponse,
@@ -33,14 +34,44 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 sys.stdout.reconfigure(encoding="utf-8")
 
-_llm = GeminiClient(model=settings.llm_model, temperature=0)
+_llm = GeminiClient(model=settings.llm_model, temperature=settings.llm_temperature)
+
+
+WorkflowStep = Literal["preferences", "clarification", "weather", "transport"]
+WorkflowTarget = Literal["preferences", "clarification", "weather", "transport", "planner", "none"]
+WorkflowStatus = Literal["not_started", "waiting_for_user", "succeeded", "empty", "failed", "skipped_by_user"]
+SupervisorIntent = Literal[
+    "start_or_continue",
+    "retry_step",
+    "revise_details",
+    "proceed_without_step",
+    "select_option",
+    "ask_clarification",
+]
+
+WORKFLOW_STEPS: tuple[WorkflowStep, ...] = ("preferences", "clarification", "weather", "transport")
+RESOLVED_WORKFLOW_STATUSES: set[str] = {"succeeded", "empty", "failed", "skipped_by_user"}
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
+class ClarificationDecision(BaseModel):
+    needs_clarification: bool
+    questions: list[str] = Field(default_factory=list)
+    assistant_message: str = ""
+
+
 class SupervisorDecision(BaseModel):
     next: Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "planner"] = Field(
         description="Which agent to invoke next."
+    )
+    intent: SupervisorIntent = Field(
+        default="start_or_continue",
+        description="The user's workflow intent inferred from the full conversation and current state.",
+    )
+    target_step: WorkflowTarget = Field(
+        default="none",
+        description="The workflow step the user's intent applies to, or planner/none.",
     )
     origin: str | None = Field(
         default=None,
@@ -80,38 +111,124 @@ class TravelState(TypedDict):
     transport_choice: TransportChoiceResponse | None
     selected_transport_options: list[TransportOption] | None
     structured_response: TravelAgentStructuredResponse | None
+    workflow_statuses: dict[str, WorkflowStatus]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _state_summary(state: TravelState) -> list[BaseMessage]:
-    """Summarise what has been collected so far for the supervisor."""
-    lines: list[str] = []
-    if state.get("preference_context"):
-        lines.append("- preference_context: collected")
-    else:
-        lines.append("- preference_context: NOT YET collected")
+def _preference_has_data(ctx: PreferenceContext | None) -> bool:
+    return bool(
+        ctx
+        and (
+            ctx.travel_style
+            or ctx.budget_style
+            or ctx.preferred_transport
+            or ctx.food_preference
+            or ctx.hotel_preference
+            or ctx.avoid
+            or ctx.origin
+            or ctx.memory_confidence > 0
+        )
+    )
 
-    if state.get("weather_forecast"):
-        lines.append("- weather_forecast: collected")
-    elif state.get("destination"):
-        lines.append(f"- weather_forecast: NOT YET collected (destination: {state['destination']})")
+
+def _transport_has_options(choice: TransportChoiceResponse | None) -> bool:
+    return bool(choice and (choice.outbound_options or choice.return_options))
+
+
+def _legacy_workflow_status(state: TravelState, step: WorkflowStep) -> WorkflowStatus:
+    if step == "preferences":
+        if state.get("preference_context"):
+            return "succeeded" if _preference_has_data(state.get("preference_context")) else "empty"
+        return "not_started"
+
+    if step == "clarification":
+        if state.get("clarification_response"):
+            return "waiting_for_user"
+        if state.get("clarification_checked"):
+            return "succeeded"
+        return "not_started"
+
+    if step == "weather":
+        forecast = state.get("weather_forecast")
+        if forecast:
+            return "succeeded" if forecast.daily_forecast else "empty"
+        return "not_started"
+
+    if step == "transport":
+        if state.get("selected_transport_options"):
+            return "succeeded"
+        choice = state.get("transport_choice")
+        if choice:
+            return "succeeded" if _transport_has_options(choice) else "empty"
+        return "not_started"
+
+    return "not_started"
+
+
+def _workflow_statuses(state: TravelState) -> dict[str, WorkflowStatus]:
+    raw = state.get("workflow_statuses") or {}
+    statuses: dict[str, WorkflowStatus] = {}
+    allowed = {"not_started", "waiting_for_user", "succeeded", "empty", "failed", "skipped_by_user"}
+    for step in WORKFLOW_STEPS:
+        legacy_status = _legacy_workflow_status(state, step)
+        value = raw.get(step)
+        if step in {"clarification", "transport"} and legacy_status in {"waiting_for_user", "succeeded"}:
+            statuses[step] = legacy_status
+        else:
+            statuses[step] = cast(WorkflowStatus, value) if value in allowed else legacy_status
+    return statuses
+
+
+def _status_update(state: TravelState, step: WorkflowStep, status: WorkflowStatus) -> dict[str, WorkflowStatus]:
+    statuses = _workflow_statuses(state)
+    statuses[step] = status
+    return statuses
+
+
+def _state_summary(state: TravelState) -> list[BaseMessage]:
+    lines: list[str] = []
+    statuses = _workflow_statuses(state)
+
+    if state.get("preference_context"):
+        prefs = state["preference_context"]
+        origin = prefs.origin or "unknown"
+        lines.append(f"- preference_context: COLLECTED (origin: {origin})")
     else:
-        lines.append("- weather_forecast: N/A (no destination mentioned)")
+        lines.append("- preference_context: MISSING")
 
     if state.get("clarification_checked"):
-        lines.append("- clarification: checked")
+        lines.append("- clarification: CHECKED")
     else:
-        lines.append("- clarification: NOT YET checked")
+        lines.append("- clarification: NOT YET CHECKED")
+
+    origin = _origin_from_state(state)
+    destination = state.get("destination")
+    lines.append(f"- origin: {origin or 'UNKNOWN'}")
+    lines.append(f"- destination: {destination or 'UNKNOWN'}")
+    lines.append(f"- trip_duration_days: {state.get('trip_duration_days') or 'UNKNOWN'}")
+    lines.append(f"- trip_start_date: {state.get('trip_start_date') or 'UNKNOWN'}")
+    lines.append("- workflow ledger:")
+    for step in WORKFLOW_STEPS:
+        lines.append(f"  - {step}: {statuses[step]}")
+
+    if state.get("weather_forecast"):
+        lines.append("- weather_forecast: COLLECTED")
+    elif destination:
+        lines.append(f"- weather_forecast: NOT YET COLLECTED (destination: {destination})")
+    else:
+        lines.append("- weather_forecast: N/A (no destination yet)")
 
     if state.get("selected_transport_options"):
-        lines.append("- selected_transport_options: collected")
+        lines.append("- transport: SELECTED BY USER")
+    elif _transport_has_options(state.get("transport_choice")):
+        lines.append("- transport: SEARCHED, OPTIONS FOUND (awaiting user selection or proceed instruction)")
     elif state.get("transport_choice"):
-        lines.append("- transport_choice: waiting for user selection")
-    elif state.get("origin") and state.get("destination"):
-        lines.append(f"- transport_choice: NOT YET collected (origin: {state['origin']})")
+        lines.append("- transport: SEARCHED, NO OPTIONS FOUND")
+    elif origin and destination:
+        lines.append(f"- transport: NOT YET OFFERED (origin: {origin}, destination: {destination})")
     else:
-        lines.append("- transport_choice: N/A (missing origin or destination)")
+        lines.append("- transport: N/A (origin or destination unknown)")
 
     return [SystemMessage(content="Current state:\n" + "\n".join(lines))]
 
@@ -130,7 +247,7 @@ def _origin_from_state(state: TravelState) -> str | None:
     if state.get("origin"):
         return state["origin"]
     prefs = state.get("preference_context")
-    return prefs.home_city if prefs and prefs.home_city else None
+    return prefs.origin if prefs and prefs.origin else None
 
 
 def _apply_transport_budget(
@@ -170,74 +287,154 @@ def _transport_option_to_flight_option(option: TransportOption) -> dict:
     }
 
 
-def _clarification_response(state: TravelState) -> TravelAgentChatResponse | None:
-    questions: list[str] = []
-    origin = _origin_from_state(state)
-
-    if not state.get("destination"):
-        questions.append("Where do you want to go, or what kind of place are you in the mood for?")
-
-    if not origin:
-        questions.append("Where will you be starting from?")
-
-    if state.get("trip_duration_days") is None:
-        questions.append("How many days, or which dates, should I plan around?")
-
-    if not questions:
-        return None
-
-    limited_questions = questions[:2]
-    if len(limited_questions) == 1:
-        assistant_message = f"Nice, I can plan that. Quick question first: {limited_questions[0]}"
-    else:
-        assistant_message = "Nice, I can shape this into a proper trip. A couple details first:\n" + "\n".join(
-            f"- {question}" for question in limited_questions
-        )
-
-    return TravelAgentChatResponse(
-        response_type="clarification",
-        assistant_message=assistant_message,
-        questions=limited_questions,
-    )
-
-
 # ── Nodes ────────────────────────────────────────────────────────────────────
 
-async def supervisor_node(state: TravelState) -> dict:
-    logger.info("Supervisor running — deciding next step")
-    today = datetime.now(timezone.utc).strftime("%A, %Y-%m-%d")
-
-    # Only pass history on the first run when we still need to extract destination/duration.
-    # Subsequent runs (after preference_agent / weather_agent) are pure routing — _state_summary
-    # already carries what was collected, no need to re-send raw history.
-    needs_extraction = not state.get("destination") or state.get("trip_duration_days") is None
+def _supervisor_messages(
+    state: TravelState,
+    today: str,
+    validation_issue: str | None = None,
+) -> list[BaseMessage]:
+    needs_extraction = (
+        not _origin_from_state(state)
+        or not state.get("destination")
+        or state.get("trip_duration_days") is None
+    )
     history_messages = (state.get("messages") or []) if needs_extraction else []
-
-    decision: SupervisorDecision = await _llm.with_structured_output(
-        SupervisorDecision, method="json_schema"
-    ).ainvoke([
+    messages: list[BaseMessage] = [
         SystemMessage(content=f"{SUPERVISOR_PROMPT}\n\nToday is {today}."),
         *history_messages,
         HumanMessage(content=state["user_message"]),
         *_state_summary(state),
-    ])
+    ]
+    if validation_issue:
+        messages.append(SystemMessage(content=(
+            "The previous SupervisorDecision was structurally incompatible with the workflow state. "
+            f"Validation issue: {validation_issue}\n"
+            "Return a corrected SupervisorDecision JSON. Do not explain."
+        )))
+    return messages
+
+
+async def _ask_supervisor(state: TravelState, today: str, validation_issue: str | None = None) -> SupervisorDecision:
+    return await _llm.with_structured_output(
+        SupervisorDecision, method="json_schema"
+    ).ainvoke(_supervisor_messages(state, today, validation_issue))
+
+
+def _apply_decision_trip_fields(
+    state: TravelState,
+    decision: SupervisorDecision,
+) -> tuple[str | None, str | None, int | None, str | None]:
+    return (
+        decision.origin or state.get("origin") or _origin_from_state(state),
+        decision.destination or state.get("destination"),
+        decision.trip_duration_days or state.get("trip_duration_days"),
+        decision.trip_start_date or state.get("trip_start_date"),
+    )
+
+
+def _agent_for_step(step: str) -> str | None:
+    return {
+        "preferences": "preference_agent",
+        "clarification": "clarifier",
+        "weather": "weather_agent",
+        "transport": "transport_agent",
+    }.get(step)
+
+
+def _statuses_after_intent(
+    state: TravelState,
+    decision: SupervisorDecision,
+    weather_invalidated: bool,
+    transport_invalidated: bool,
+) -> dict[str, WorkflowStatus]:
+    statuses = _workflow_statuses(state)
+    if weather_invalidated:
+        statuses["weather"] = "not_started"
+    if transport_invalidated:
+        statuses["transport"] = "not_started"
+
+    if decision.target_step in WORKFLOW_STEPS:
+        target = cast(WorkflowStep, decision.target_step)
+        if decision.intent == "retry_step":
+            statuses[target] = "not_started"
+        elif decision.intent == "proceed_without_step":
+            statuses[target] = "skipped_by_user"
+    return statuses
+
+
+def _validate_supervisor_decision(
+    decision: SupervisorDecision,
+    origin: str | None,
+    destination: str | None,
+    trip_duration_days: int | None,
+    statuses: dict[str, WorkflowStatus],
+) -> str | None:
+    if decision.intent == "retry_step":
+        expected_agent = _agent_for_step(decision.target_step)
+        if expected_agent is None:
+            return "retry_step intent must target one specialist workflow step."
+        if decision.next != expected_agent:
+            return f"retry_step for {decision.target_step} must route next to {expected_agent}."
+
+    if decision.next == "weather_agent":
+        if not destination:
+            return "weather_agent requires a known destination."
+        if trip_duration_days is None:
+            return "weather_agent requires a known trip duration."
+
+    if decision.next == "transport_agent":
+        if not origin or not destination:
+            return "transport_agent requires known origin and destination."
+        if trip_duration_days is None:
+            return "transport_agent requires a known trip duration."
+
+    if decision.next == "planner":
+        if not origin or not destination or trip_duration_days is None:
+            return "planner requires origin, destination, and trip duration."
+        unresolved = [
+            step for step, status in statuses.items()
+            if step in WORKFLOW_STEPS and status not in RESOLVED_WORKFLOW_STATUSES
+        ]
+        if unresolved:
+            return (
+                "planner requires all specialist workflow steps to be resolved. "
+                f"Unresolved steps: {', '.join(unresolved)}."
+            )
+
+    return None
+
+
+def _incompatible_decision_response(issue: str) -> TravelAgentChatResponse:
+    return TravelAgentChatResponse(
+        response_type="clarification",
+        assistant_message=(
+            "I need to resolve one more planning step before I can continue: "
+            f"{issue}"
+        ),
+        questions=["How would you like me to handle that step?"],
+    )
+
+
+async def supervisor_node(state: TravelState) -> dict:
+    logger.info("Supervisor running — deciding next step")
+    today = datetime.now(timezone.utc).strftime("%A, %Y-%m-%d")
+    decision = await _ask_supervisor(state, today)
     logger.info(
-        "Supervisor decision: %s (origin: %s, destination: %s, days: %s)",
+        "Supervisor decision: %s/%s -> %s (origin: %s, destination: %s, days: %s)",
+        decision.intent,
+        decision.target_step,
         decision.next,
         decision.origin,
         decision.destination,
         decision.trip_duration_days,
     )
-    next_step = decision.next
     previous_origin = state.get("origin") or _origin_from_state(state)
     previous_destination = state.get("destination")
     previous_days = state.get("trip_duration_days")
     previous_start_date = state.get("trip_start_date")
 
-    origin = decision.origin or state.get("origin") or _origin_from_state(state)
-    destination = decision.destination or state.get("destination")
-    trip_duration_days = decision.trip_duration_days or state.get("trip_duration_days")
-    trip_start_date = decision.trip_start_date or state.get("trip_start_date")
+    origin, destination, trip_duration_days, trip_start_date = _apply_decision_trip_fields(state, decision)
 
     origin_changed = bool(decision.origin and previous_origin and decision.origin.lower() != previous_origin.lower())
     destination_changed = bool(
@@ -257,38 +454,67 @@ async def supervisor_node(state: TravelState) -> dict:
     )
     weather_invalidated = destination_changed or days_changed or start_date_changed
     transport_invalidated = origin_changed or destination_changed or days_changed or start_date_changed
-    weather_forecast = None if weather_invalidated else state.get("weather_forecast")
-    transport_choice = None if transport_invalidated else state.get("transport_choice")
-    selected_transport_options = None if transport_invalidated else state.get("selected_transport_options")
+    statuses = _statuses_after_intent(state, decision, weather_invalidated, transport_invalidated)
+    validation_issue = _validate_supervisor_decision(decision, origin, destination, trip_duration_days, statuses)
 
-    if state.get("preference_context") and not state.get("clarification_checked"):
-        next_step = "clarifier"
-    elif (
-        state.get("preference_context")
-        and weather_forecast
-        and not selected_transport_options
-        and not transport_choice
-        and origin
-        and destination
-    ):
-        next_step = "transport_agent"
-    elif selected_transport_options:
-        next_step = "planner"
-    elif weather_invalidated and destination:
-        next_step = "weather_agent"
+    if validation_issue:
+        logger.info("Supervisor decision incompatible; re-asking LLM: %s", validation_issue)
+        decision = await _ask_supervisor(state, today, validation_issue=validation_issue)
+        origin, destination, trip_duration_days, trip_start_date = _apply_decision_trip_fields(state, decision)
+        origin_changed = bool(decision.origin and previous_origin and decision.origin.lower() != previous_origin.lower())
+        destination_changed = bool(
+            decision.destination
+            and previous_destination
+            and decision.destination.lower() != previous_destination.lower()
+        )
+        days_changed = bool(
+            decision.trip_duration_days
+            and previous_days
+            and decision.trip_duration_days != previous_days
+        )
+        start_date_changed = bool(
+            decision.trip_start_date
+            and previous_start_date
+            and decision.trip_start_date != previous_start_date
+        )
+        weather_invalidated = destination_changed or days_changed or start_date_changed
+        transport_invalidated = origin_changed or destination_changed or days_changed or start_date_changed
+        statuses = _statuses_after_intent(state, decision, weather_invalidated, transport_invalidated)
+        validation_issue = _validate_supervisor_decision(decision, origin, destination, trip_duration_days, statuses)
+
+    if validation_issue:
+        return {
+            "next": decision.next,
+            "workflow_statuses": statuses,
+            "clarification_response": _incompatible_decision_response(validation_issue),
+        }
 
     updates = {
-        "next": next_step,
+        "next": decision.next,
         "origin": origin,
         "destination": destination,
         "trip_duration_days": trip_duration_days,
         "trip_start_date": trip_start_date,
+        "workflow_statuses": statuses,
     }
     if weather_invalidated:
         updates["weather_forecast"] = None
     if transport_invalidated:
         updates["transport_choice"] = None
         updates["selected_transport_options"] = None
+    if decision.intent == "retry_step":
+        if decision.target_step == "preferences":
+            updates["preference_context"] = None
+        elif decision.target_step == "weather":
+            updates["weather_forecast"] = None
+        elif decision.target_step == "transport":
+            updates["transport_choice"] = None
+            updates["selected_transport_options"] = None
+    if decision.intent == "proceed_without_step" and decision.target_step == "transport":
+        updates["transport_choice"] = None
+        updates["selected_transport_options"] = None
+    if decision.next == "planner" and not state.get("selected_transport_options"):
+        updates["transport_choice"] = None
     return updates
 
 
@@ -300,25 +526,51 @@ async def preference_agent_node(state: TravelState) -> dict:
             "messages": [("human", "Fetch all user preference data and synthesize a PreferenceContext.")]
         })
         ctx: PreferenceContext = result["structured_response"]
-        logger.info("PreferenceAgent done — home city: %s, budget: %s", ctx.home_city, ctx.budget_style)
-        return {"preference_context": ctx}
+        logger.info("PreferenceAgent done — origin: %s, budget: %s", ctx.origin, ctx.budget_style)
+        return {
+            "preference_context": ctx,
+            "workflow_statuses": _status_update(
+                state,
+                "preferences",
+                "succeeded" if _preference_has_data(ctx) else "empty",
+            ),
+        }
     except Exception:
         logger.error("PreferenceAgent failed", exc_info=True)
-        return {"preference_context": PreferenceContext()}
+        return {
+            "preference_context": PreferenceContext(),
+            "workflow_statuses": _status_update(state, "preferences", "failed"),
+        }
 
 
 async def clarifier_node(state: TravelState) -> dict:
-    logger.info("Clarifier checking whether enough trip detail exists")
-    clarification = _clarification_response(state)
-    if clarification:
-        logger.info("Clarifier asking %s question(s)", len(clarification.questions))
+    logger.info("Clarifier running — LLM deciding whether clarification is needed")
+    decision: ClarificationDecision = await _llm.with_structured_output(
+        ClarificationDecision, method="json_schema"
+    ).ainvoke([
+        SystemMessage(content=CLARIFIER_PROMPT),
+        *(state.get("messages") or []),
+        HumanMessage(content=state["user_message"]),
+        *_state_summary(state),
+    ])
+
+    if decision.needs_clarification:
+        logger.info("Clarifier asking %s question(s)", len(decision.questions))
         return {
             "clarification_checked": True,
-            "clarification_response": clarification,
+            "workflow_statuses": _status_update(state, "clarification", "waiting_for_user"),
+            "clarification_response": TravelAgentChatResponse(
+                response_type="clarification",
+                assistant_message=decision.assistant_message,
+                questions=decision.questions,
+            ),
         }
 
     logger.info("Clarifier passed; enough detail to plan")
-    return {"clarification_checked": True}
+    return {
+        "clarification_checked": True,
+        "workflow_statuses": _status_update(state, "clarification", "succeeded"),
+    }
 
 
 async def weather_agent_node(state: TravelState) -> dict:
@@ -332,10 +584,20 @@ async def weather_agent_node(state: TravelState) -> dict:
         })
         forecast: WeatherForecastResponse = result["structured_response"]
         logger.info("WeatherAgent done — %s", forecast.summary[:80])
-        return {"weather_forecast": forecast}
+        return {
+            "weather_forecast": forecast,
+            "workflow_statuses": _status_update(
+                state,
+                "weather",
+                "succeeded" if forecast.daily_forecast else "empty",
+            ),
+        }
     except Exception:
         logger.error("WeatherAgent failed", exc_info=True)
-        return {"weather_forecast": _unavailable_forecast(destination)}
+        return {
+            "weather_forecast": _unavailable_forecast(destination),
+            "workflow_statuses": _status_update(state, "weather", "failed"),
+        }
 
 
 async def transport_agent_node(state: TravelState) -> dict:
@@ -344,7 +606,7 @@ async def transport_agent_node(state: TravelState) -> dict:
     trip_dates = _trip_dates(state)
     if not origin or not destination:
         logger.info("TransportAgent skipped; missing origin or destination")
-        return {}
+        return {"workflow_statuses": _status_update(state, "transport", "failed")}
 
     logger.info("TransportAgent running — %s to %s on %s", origin, destination, trip_dates[0])
     choice = build_transport_choice(
@@ -360,7 +622,14 @@ async def transport_agent_node(state: TravelState) -> dict:
         len(choice.outbound_options),
         len(choice.return_options),
     )
-    return {"transport_choice": choice}
+    return {
+        "transport_choice": choice,
+        "workflow_statuses": _status_update(
+            state,
+            "transport",
+            "succeeded" if _transport_has_options(choice) else "empty",
+        ),
+    }
 
 
 async def planner_node(state: TravelState) -> dict:
@@ -382,7 +651,11 @@ async def planner_node(state: TravelState) -> dict:
         TravelPlanLLMOutput, method="json_schema"
     ).ainvoke(messages)
 
-    result = TravelAgentStructuredResponse(**plan.model_dump())
+    try:
+        result = TravelAgentStructuredResponse.model_validate(plan.model_dump())
+    except ValidationError as exc:
+        logger.error("Planner schema conversion failed: %s\nRaw plan: %s", exc, plan.model_dump())
+        raise RuntimeError("The planner produced an invalid response. Please try again.") from exc
 
     updates: dict = {}
     origin = _origin_from_state(state)
@@ -410,16 +683,6 @@ async def planner_node(state: TravelState) -> dict:
     return {"structured_response": result}
 
 
-# ── Routing ──────────────────────────────────────────────────────────────────
-
-def _route(state: TravelState) -> str:
-    return state["next"]
-
-
-def _route_after_clarifier(state: TravelState) -> str:
-    return END if state.get("clarification_response") else "supervisor"
-
-
 # ── Graph ────────────────────────────────────────────────────────────────────
 
 graph = StateGraph(TravelState)
@@ -432,14 +695,15 @@ graph.add_node("transport_agent", transport_agent_node)
 graph.add_node("planner", planner_node)
 
 graph.add_edge(START, "supervisor")
-graph.add_conditional_edges("clarifier", _route_after_clarifier, {
+graph.add_conditional_edges("clarifier", lambda s: END if s.get("clarification_response") else "supervisor", {
     END: END,
     "supervisor": "supervisor",
 })
 graph.add_edge("preference_agent", "supervisor")
 graph.add_edge("weather_agent", "supervisor")
 graph.add_edge("transport_agent", END)
-graph.add_conditional_edges("supervisor", _route, {
+graph.add_conditional_edges("supervisor", lambda s: END if s.get("clarification_response") else s["next"], {
+    END: END,
     "preference_agent": "preference_agent",
     "clarifier": "clarifier",
     "weather_agent": "weather_agent",
@@ -559,7 +823,6 @@ async def run_travel_agent(
     try:
         result = await agent.ainvoke(input_state, config=config)
     except Exception as exc:
-        import psycopg
         if isinstance(exc, psycopg.OperationalError):
             logger.warning("Postgres connection dropped, reinitialising checkpointer and retrying...")
             await close_agent_checkpointing()

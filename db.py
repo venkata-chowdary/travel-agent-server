@@ -55,6 +55,11 @@ async def get_db_session() -> AsyncIterator[AsyncSession]:
 
 SCHEMA_COMPATIBILITY_STATEMENTS = (
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences JSONB DEFAULT '{}'::jsonb",
+    (
+        "UPDATE users SET preferences = jsonb_set(preferences, '{origin}', preferences->'home_city', true) "
+        "WHERE preferences ? 'home_city' AND NOT (preferences ? 'origin') "
+        "AND preferences->'home_city' IS NOT NULL AND preferences->'home_city' <> 'null'::jsonb"
+    ),
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_seen_preferences_dialog BOOLEAN DEFAULT FALSE",
     "ALTER TABLE trips ADD COLUMN IF NOT EXISTS origin VARCHAR(255)",
     "ALTER TABLE trips ADD COLUMN IF NOT EXISTS start_date VARCHAR(64)",
@@ -69,6 +74,7 @@ SCHEMA_COMPATIBILITY_STATEMENTS = (
     "ALTER TABLE trips ADD COLUMN IF NOT EXISTS trip_risks JSONB NOT NULL DEFAULT '[]'::jsonb",
     "ALTER TABLE trips ADD COLUMN IF NOT EXISTS verification_tips JSONB NOT NULL DEFAULT '[]'::jsonb",
     "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS payload JSONB NOT NULL DEFAULT '{}'::jsonb",
+    "CREATE INDEX IF NOT EXISTS ix_chat_messages_session_created ON chat_messages (session_id, created_at)",
 )
 
 

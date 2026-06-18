@@ -47,9 +47,11 @@ def resolve_city_code(value: str | None) -> str | None:
     if not value:
         return None
     cleaned = value.strip().lower()
+    if cleaned in CITY_CODES:
+        return CITY_CODES[cleaned]
     if len(cleaned) == 3 and cleaned.isalpha():
         return cleaned.upper()
-    return CITY_CODES.get(cleaned)
+    return None
 
 
 def build_transport_choice(
@@ -106,13 +108,20 @@ def build_transport_choice(
     recommended_outbound = _recommended(outbound, preferred)
     recommended_return = _recommended(return_options, preferred)
     total_options = len(outbound) + len(return_options)
-    summary = (
-        f"I found {total_options} transport option{'s' if total_options != 1 else ''} "
-        f"for {origin} to {destination}. Pick the outbound"
-    )
-    if return_options:
-        summary += " and return"
-    summary += " option you want me to plan around."
+    if total_options == 0:
+        summary = (
+            f"I couldn't find mock transport options for {origin} to {destination} "
+            f"for {start_date}. I can check again, use different route or date details, "
+            "or continue without a selected transport option."
+        )
+    else:
+        summary = (
+            f"I found {total_options} transport option{'s' if total_options != 1 else ''} "
+            f"for {origin} to {destination}. Pick the outbound"
+        )
+        if return_options:
+            summary += " and return"
+        summary += " option you want me to plan around."
 
     return TransportChoiceResponse(
         origin=origin,

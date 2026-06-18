@@ -15,7 +15,7 @@ def make_preference_tools(user_id: str | UUID) -> list:
     async def get_saved_preferences() -> dict[str, Any]:
         """Retrieve the raw saved travel preferences for the current user.
         Returns budget_range, travel_style, dietary_restrictions, cabin_class,
-        accommodation_type, pace, home_city, and currency."""
+        accommodation_type, pace, origin, and currency."""
         return await fetch_user_preferences(user_id)
 
     @tool

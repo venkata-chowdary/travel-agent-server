@@ -1,6 +1,12 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+
+def _normalize_legacy_origin(data):
+    if isinstance(data, dict) and not data.get("origin") and data.get("home_city"):
+        return {**data, "origin": data["home_city"]}
+    return data
 
 
 class TravelPreferences(BaseModel):
@@ -9,8 +15,13 @@ class TravelPreferences(BaseModel):
     dietary_restrictions: list[str] = Field(default_factory=list)
     accommodation_type: Literal["hotel", "hostel", "airbnb", "resort", "boutique"] | None = None
     pace: Literal["relaxed", "moderate", "packed"] | None = None
-    home_city: str | None = None
-    currency: str = "₹"
+    origin: str | None = None
+    currency: str = "\u20b9"
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_legacy_home_city(cls, data):
+        return _normalize_legacy_origin(data)
 
 
 class UserProfile(BaseModel):
@@ -39,5 +50,10 @@ class PreferenceContext(BaseModel):
     hotel_preference: str | None = None
     avoid: list[str] = Field(default_factory=list)
     memory_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-    home_city: str | None = None
-    currency: str = "₹"
+    origin: str | None = None
+    currency: str = "\u20b9"
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_legacy_home_city(cls, data):
+        return _normalize_legacy_origin(data)

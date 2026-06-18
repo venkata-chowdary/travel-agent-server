@@ -41,6 +41,26 @@ def _dump(value: Any) -> Any:
     return value
 
 
+def _ai_message_content(row: Any) -> str:
+    """Build a richer AIMessage string so the LLM can reason about prior trip plans."""
+    payload = row.payload or {}
+    if payload.get("response_type") == "trip_plan":
+        plan = payload.get("trip_plan") or {}
+        dest = plan.get("destination", "")
+        days = plan.get("days", "")
+        summary = plan.get("summary", "")
+        budget = (plan.get("budget") or {}).get("total", "")
+        parts = [row.content]
+        if dest and days:
+            parts.append(f"Planned: {days}-day trip to {dest}.")
+        if summary:
+            parts.append(summary)
+        if budget:
+            parts.append(f"Total budget: {budget}.")
+        return " ".join(p for p in parts if p)
+    return row.content
+
+
 def _trip_context_message(trip: Any) -> BaseMessage:
     return SystemMessage(
         content=(
@@ -89,7 +109,7 @@ async def chat(
 
     history_rows = await load_chat_history(session, body.session_id, current_user.id)
     lc_history = [
-        HumanMessage(content=r.content) if r.role == "user" else AIMessage(content=r.content)
+        HumanMessage(content=r.content) if r.role == "user" else AIMessage(content=_ai_message_content(r))
         for r in history_rows
     ]
     target_trip = None

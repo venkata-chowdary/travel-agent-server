@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import logging
-import sys
 
-from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
 
@@ -12,9 +10,6 @@ from ai.schemas.weather import WeatherForecastResponse
 from ai.tools.weather_tool import get_weather_forecast
 
 logger = logging.getLogger(__name__)
-
-load_dotenv()
-sys.stdout.reconfigure(encoding="utf-8")
 
 
 def build_weather_executor(llm: BaseChatModel):

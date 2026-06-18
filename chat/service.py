@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from chat.models import ChatMessage
 
-HISTORY_LIMIT = 20
+HISTORY_LIMIT = 40
 
 
 async def load_chat_history(

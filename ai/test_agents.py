@@ -88,7 +88,7 @@ async def test_preference_agent() -> None:
 
     ok(f"PreferenceAgent done in {dur}")
     print()
-    info("Home city",         ctx.home_city or "—")
+    info("Origin",            ctx.origin or "—")
     info("Travel style",      ctx.travel_style or "—")
     info("Budget style",      ctx.budget_style or "—")
     info("Food preference",   ctx.food_preference or "—")

@@ -12,6 +12,14 @@ async def main():
             await conn.execute(
                 text("ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences JSONB DEFAULT '{}'::jsonb;")
             )
+            await conn.execute(text("""
+                UPDATE users
+                SET preferences = jsonb_set(preferences, '{origin}', preferences->'home_city', true)
+                WHERE preferences ? 'home_city'
+                  AND NOT (preferences ? 'origin')
+                  AND preferences->'home_city' IS NOT NULL
+                  AND preferences->'home_city' <> 'null'::jsonb;
+            """))
             await conn.execute(
                 text("ALTER TABLE users ADD COLUMN IF NOT EXISTS has_seen_preferences_dialog BOOLEAN DEFAULT FALSE;")
             )

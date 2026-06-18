@@ -173,7 +173,13 @@ def _workflow_statuses(state: TravelState) -> dict[str, WorkflowStatus]:
     for step in WORKFLOW_STEPS:
         legacy_status = _legacy_workflow_status(state, step)
         value = raw.get(step)
-        if step in {"clarification", "transport"} and legacy_status in {"waiting_for_user", "succeeded"}:
+        # Legacy inference can override the checkpoint only when the checkpoint
+        # has no meaningful value yet — never overwrite a stored 'failed' status.
+        if (
+            step in {"clarification", "transport"}
+            and legacy_status in {"waiting_for_user", "succeeded"}
+            and (value is None or value == "not_started")
+        ):
             statuses[step] = legacy_status
         else:
             statuses[step] = cast(WorkflowStatus, value) if value in allowed else legacy_status

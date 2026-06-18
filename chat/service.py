@@ -32,6 +32,7 @@ async def save_chat_turn(
     assistant_content: str,
     user_payload: dict[str, Any] | None = None,
     assistant_payload: dict[str, Any] | None = None,
+    commit: bool = True,
 ) -> None:
     session.add_all([
         ChatMessage(
@@ -49,4 +50,7 @@ async def save_chat_turn(
             payload=assistant_payload or {},
         ),
     ])
-    await session.commit()
+    if commit:
+        await session.commit()
+    else:
+        await session.flush()

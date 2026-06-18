@@ -25,6 +25,7 @@ async def create_trip(
     user_id: str | UUID,
     payload: TripCreate | TravelAgentStructuredResponse,
     session_id: str | None = None,
+    commit: bool = True,
 ) -> Trip:
     trip_data = TripCreate.model_validate(payload.model_dump(mode="json")) if isinstance(payload, TravelAgentStructuredResponse) else payload
 
@@ -52,7 +53,10 @@ async def create_trip(
         **({"created_at": trip_data.created_at} if trip_data.created_at is not None else {}),
     )
     session.add(trip)
-    await session.commit()
+    if commit:
+        await session.commit()
+    else:
+        await session.flush()
     await session.refresh(trip)
     return trip
 
@@ -82,6 +86,7 @@ async def update_trip_from_plan(
     user_id: str | UUID,
     trip_id: str | UUID,
     payload: TripCreate | TravelAgentStructuredResponse,
+    commit: bool = True,
 ) -> Trip | None:
     trip = await get_trip(session, user_id, trip_id)
     if trip is None:
@@ -90,7 +95,10 @@ async def update_trip_from_plan(
     trip_data = TripCreate.model_validate(payload.model_dump(mode="json")) if isinstance(payload, TravelAgentStructuredResponse) else payload
     _apply_trip_data(trip, trip_data)
     session.add(trip)
-    await session.commit()
+    if commit:
+        await session.commit()
+    else:
+        await session.flush()
     await session.refresh(trip)
     return trip
 
@@ -153,6 +161,7 @@ async def create_draft_trip(
     user_id: str | UUID,
     session_id: str,
     transport_choice: TransportChoiceResponse,
+    commit: bool = True,
 ) -> Trip:
     """Create a minimal trip stub as soon as the clarifier passes and transport options are ready.
 
@@ -191,7 +200,8 @@ async def create_draft_trip(
         )
     )
     await session.execute(stmt)
-    await session.commit()
+    if commit:
+        await session.commit()
 
     result = await session.execute(
         select(Trip).where(
@@ -241,6 +251,7 @@ async def save_transport_options(
     session_id: str,
     trip_id: UUID,
     transport_choice: TransportChoiceResponse,
+    commit: bool = True,
 ) -> None:
     """Persist all available transport options linked to the draft trip.
 
@@ -281,13 +292,16 @@ async def save_transport_options(
         index_elements=["session_id", "option_id"]
     )
     await session.execute(stmt)
-    await session.commit()
+    if commit:
+        await session.commit()
 
 
 async def link_transport_options_to_trip(
     session: AsyncSession,
     trip_id: UUID,
     selected_options: list[TransportOption],
+    was_skipped: bool = False,
+    commit: bool = True,
 ) -> None:
     """Finalise transport option statuses on the trip after the planner runs.
 
@@ -297,13 +311,20 @@ async def link_transport_options_to_trip(
     - selected options  → 'selected'
     - remaining options → 'available' (visible as alternatives in the trip detail view)
     - if user skipped   → all options → 'skipped'
-    - no options at all → trip.transport_status stays 'not_searched'
+    - no options at all + was_skipped → transport_status = 'skipped'
+    - no options at all              → transport_status stays 'not_searched'
     """
     count_row = await session.execute(
         select(func.count()).select_from(TripTransportOption)
         .where(TripTransportOption.trip_id == trip_id)
     )
     if (count_row.scalar() or 0) == 0:
+        if was_skipped:
+            await session.execute(
+                update(Trip).where(Trip.id == trip_id).values(transport_status="skipped")
+            )
+            if commit:
+                await session.commit()
         return
 
     selected_ids = {opt.id for opt in selected_options}
@@ -329,7 +350,8 @@ async def link_transport_options_to_trip(
     await session.execute(
         update(Trip).where(Trip.id == trip_id).values(transport_status=transport_status)
     )
-    await session.commit()
+    if commit:
+        await session.commit()
 
 
 async def expire_session_transport_options(session: AsyncSession, session_id: str) -> None:

@@ -69,6 +69,12 @@ def _ai_message_content(row: Any) -> str:
         if budget:
             parts.append(f"Total budget: {budget}.")
         return " ".join(p for p in parts if p)
+    if payload.get("response_type") == "transport_choice":
+        tc = payload.get("transport_choice") or {}
+        origin = tc.get("origin", "")
+        dest = tc.get("destination", "")
+        route = f"{origin} → {dest}" if origin and dest else origin or dest or "unknown route"
+        return f"{row.content} Transport options were presented for {route}. User has not yet selected."
     return row.content
 
 
@@ -119,15 +125,30 @@ async def chat(
     logger.info("Chat request [session=%s]: %s", body.session_id[:8], body.message[:80])
 
     history_rows = await load_chat_history(session, body.session_id, current_user.id)
-    lc_history = [
-        HumanMessage(content=r.content) if r.role == "user" else AIMessage(content=_ai_message_content(r))
-        for r in history_rows
-    ]
+    lc_history: list[BaseMessage] = []
+    for r in history_rows:
+        if r.role == "user":
+            ts = (r.payload or {}).get("transport_selection")
+            if ts:
+                opts = ts.get("selected_options") or []
+                lines = ["User selected transport:"]
+                for opt in opts:
+                    lines.append(
+                        f"  {opt.get('leg','').capitalize()}: {opt.get('provider','')} "
+                        f"{opt.get('from','')} → {opt.get('to','')} "
+                        f"depart {opt.get('depart','')} arrive {opt.get('arrive','')} "
+                        f"₹{opt.get('price','')}"
+                    )
+                lc_history.append(SystemMessage(content="\n".join(lines)))
+            lc_history.append(HumanMessage(content=r.content))
+        else:
+            lc_history.append(AIMessage(content=_ai_message_content(r)))
     target_trip = None
     if body.target_trip_id is not None:
         target_trip = await get_trip(session, current_user.id, body.target_trip_id)
         if target_trip is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="trip not found")
+        await session.refresh(target_trip)
         lc_history.insert(0, _trip_context_message(target_trip))
 
     # Release the DB connection back to the pool before the long AI call so
@@ -152,60 +173,71 @@ async def chat(
     }
     assistant_payload = response.model_dump(mode="json", by_alias=True)
 
-    await save_chat_turn(
-        session,
-        body.session_id,
-        current_user.id,
-        body.message,
-        response.assistant_message,
-        user_payload={k: v for k, v in user_payload.items() if v is not None},
-        assistant_payload=assistant_payload,
-    )
-
-    if response.response_type == "transport_choice" and response.transport_choice is not None:
-        if body.target_trip_id is not None:
-            # Editing flow — trip already exists; link options directly to it.
-            trip_id_for_transport = body.target_trip_id
-        else:
-            # New trip flow — clarifier just passed; create the draft trip stub now.
-            draft = await create_draft_trip(
-                session, current_user.id, body.session_id, response.transport_choice
-            )
-            trip_id_for_transport = draft.id
-        await save_transport_options(
-            session, body.session_id, trip_id_for_transport, response.transport_choice
+    async with session.begin():
+        await save_chat_turn(
+            session,
+            body.session_id,
+            current_user.id,
+            body.message,
+            response.assistant_message,
+            user_payload={k: v for k, v in user_payload.items() if v is not None},
+            assistant_payload=assistant_payload,
+            commit=False,
         )
 
-    if response.response_type == "trip_plan" and response.trip_plan is not None:
-        if body.target_trip_id is not None:
-            # Editing an existing saved trip.
-            finalized = await update_trip_from_plan(
-                session, current_user.id, body.target_trip_id, response.trip_plan
-            )
-            if finalized is None:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="trip not found")
-        else:
-            draft = await get_draft_trip_by_session(session, current_user.id, body.session_id)
-            if draft is not None:
-                # Transport options were shown — upgrade the draft trip in-place.
-                finalized = await update_trip_from_plan(
-                    session, current_user.id, draft.id, response.trip_plan
-                )
+        if response.response_type == "transport_choice" and response.transport_choice is not None:
+            if body.target_trip_id is not None:
+                # Editing flow — trip already exists; link options directly to it.
+                trip_id_for_transport = body.target_trip_id
             else:
-                # Transport was skipped/not applicable.
-                # Guard against duplicate trips if the planner retries in the same session.
-                existing = await get_trip_by_session(session, current_user.id, body.session_id)
-                if existing is not None:
+                # New trip flow — clarifier just passed; create the draft trip stub now.
+                draft = await create_draft_trip(
+                    session, current_user.id, body.session_id, response.transport_choice,
+                    commit=False,
+                )
+                trip_id_for_transport = draft.id
+            await save_transport_options(
+                session, body.session_id, trip_id_for_transport, response.transport_choice,
+                commit=False,
+            )
+
+        if response.response_type == "trip_plan" and response.trip_plan is not None:
+            transport_was_skipped = False
+            if body.target_trip_id is not None:
+                # Editing an existing saved trip.
+                finalized = await update_trip_from_plan(
+                    session, current_user.id, body.target_trip_id, response.trip_plan,
+                    commit=False,
+                )
+                if finalized is None:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="trip not found")
+            else:
+                draft = await get_draft_trip_by_session(session, current_user.id, body.session_id)
+                if draft is not None:
+                    # Transport options were shown — upgrade the draft trip in-place.
                     finalized = await update_trip_from_plan(
-                        session, current_user.id, existing.id, response.trip_plan
+                        session, current_user.id, draft.id, response.trip_plan,
+                        commit=False,
                     )
                 else:
-                    finalized = await create_trip(
-                        session, current_user.id, response.trip_plan, session_id=body.session_id
-                    )
-        await link_transport_options_to_trip(
-            session, finalized.id, response.trip_plan.transport_options
-        )
+                    # Transport was skipped/not applicable.
+                    transport_was_skipped = True
+                    # Guard against duplicate trips if the planner retries in the same session.
+                    existing = await get_trip_by_session(session, current_user.id, body.session_id)
+                    if existing is not None:
+                        finalized = await update_trip_from_plan(
+                            session, current_user.id, existing.id, response.trip_plan,
+                            commit=False,
+                        )
+                    else:
+                        finalized = await create_trip(
+                            session, current_user.id, response.trip_plan,
+                            session_id=body.session_id, commit=False,
+                        )
+            await link_transport_options_to_trip(
+                session, finalized.id, response.trip_plan.transport_options,
+                was_skipped=transport_was_skipped, commit=False,
+            )
 
     logger.info("Chat response ready [session=%s]", body.session_id[:8])
     return response

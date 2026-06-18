@@ -72,13 +72,32 @@ def make_trip(**overrides):
     return SimpleNamespace(**data)
 
 
+class _FakeSession:
+    """Minimal AsyncSession stand-in for unit tests."""
+
+    async def close(self):
+        pass
+
+    async def refresh(self, _obj):
+        pass
+
+    def begin(self):
+        return self
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_):
+        pass
+
+
 def make_app(authenticated: bool = True) -> FastAPI:
     app = FastAPI()
     app.include_router(trips_router)
     app.include_router(agent_router)
 
     async def fake_session():
-        yield SimpleNamespace()
+        yield _FakeSession()
 
     app.dependency_overrides[get_db_session] = fake_session
     if authenticated:
@@ -280,20 +299,33 @@ def test_agent_chat_persists_generated_plan(monkeypatch):
         assistant_content,
         user_payload=None,
         assistant_payload=None,
+        commit=True,
     ):
         assert user_payload == {}
         assert assistant_payload["response_type"] == "trip_plan"
         assert assistant_payload["trip_plan"]["destination"] == "Tokyo"
 
-    async def fake_create_trip(session, user_id, payload):
+    async def fake_create_trip(session, user_id, payload, session_id=None, commit=True):
         saved["user_id"] = user_id
         saved["payload"] = payload
         return make_trip(id=UUID(payload.id), destination=payload.destination)
+
+    async def fake_get_draft_trip_by_session(session, user_id, session_id):
+        return None
+
+    async def fake_get_trip_by_session(session, user_id, session_id):
+        return None
+
+    async def fake_link_transport_options_to_trip(session, trip_id, selected_options, was_skipped=False, commit=True):
+        pass
 
     monkeypatch.setattr(agent_routes, "run_travel_agent", fake_run_travel_agent)
     monkeypatch.setattr(agent_routes, "load_chat_history", fake_load_chat_history)
     monkeypatch.setattr(agent_routes, "save_chat_turn", fake_save_chat_turn)
     monkeypatch.setattr(agent_routes, "create_trip", fake_create_trip)
+    monkeypatch.setattr(agent_routes, "get_draft_trip_by_session", fake_get_draft_trip_by_session)
+    monkeypatch.setattr(agent_routes, "get_trip_by_session", fake_get_trip_by_session)
+    monkeypatch.setattr(agent_routes, "link_transport_options_to_trip", fake_link_transport_options_to_trip)
 
     client = TestClient(make_app())
     response = client.post("/api/agent/chat", json={"message": "Plan Tokyo", "session_id": TEST_SESSION_ID})
@@ -356,12 +388,13 @@ def test_agent_chat_with_target_trip_updates_existing_trip(monkeypatch):
         assistant_content,
         user_payload=None,
         assistant_payload=None,
+        commit=True,
     ):
         assert user_payload == {"target_trip_id": str(trip_id)}
         assert assistant_payload["response_type"] == "trip_plan"
         assert assistant_payload["trip_plan"]["id"] == str(trip_id)
 
-    async def fake_update_trip_from_plan(session, user_id, requested_trip_id, payload):
+    async def fake_update_trip_from_plan(session, user_id, requested_trip_id, payload, commit=True):
         saved["updated"] = True
         saved["trip_id"] = requested_trip_id
         saved["payload"] = payload
@@ -370,12 +403,16 @@ def test_agent_chat_with_target_trip_updates_existing_trip(monkeypatch):
     async def fail_create_trip(session, user_id, payload):
         raise AssertionError("editing an existing trip must not create a duplicate")
 
+    async def fake_link_transport_options_to_trip(session, trip_id, selected_options, was_skipped=False, commit=True):
+        pass
+
     monkeypatch.setattr(agent_routes, "get_trip", fake_get_trip)
     monkeypatch.setattr(agent_routes, "run_travel_agent", fake_run_travel_agent)
     monkeypatch.setattr(agent_routes, "load_chat_history", fake_load_chat_history)
     monkeypatch.setattr(agent_routes, "save_chat_turn", fake_save_chat_turn)
     monkeypatch.setattr(agent_routes, "update_trip_from_plan", fake_update_trip_from_plan)
     monkeypatch.setattr(agent_routes, "create_trip", fail_create_trip)
+    monkeypatch.setattr(agent_routes, "link_transport_options_to_trip", fake_link_transport_options_to_trip)
 
     client = TestClient(make_app())
     response = client.post(
@@ -418,6 +455,7 @@ def test_agent_chat_clarification_does_not_persist(monkeypatch):
         assistant_content,
         user_payload=None,
         assistant_payload=None,
+        commit=True,
     ):
         assert user_payload == {}
         assert assistant_payload["response_type"] == "clarification"

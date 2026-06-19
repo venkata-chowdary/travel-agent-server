@@ -52,6 +52,14 @@ class PreferenceContext(BaseModel):
     memory_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     origin: str | None = None
     currency: str = "\u20b9"
+    supervisor_note: str = Field(
+        default="",
+        description=(
+            "One sentence for the supervisor: what you learned about this user and any gap "
+            "that would meaningfully improve the plan if clarified before planning starts. "
+            "Example: 'User prefers budget travel and dislikes crowded places \u2014 origin city is unknown, worth asking.'"
+        ),
+    )
 
     @model_validator(mode="before")
     @classmethod

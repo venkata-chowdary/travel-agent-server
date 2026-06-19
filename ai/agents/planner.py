@@ -11,7 +11,7 @@ from ai.helpers import get_llm, format_preferences_block, format_transport_block
 from ai.prompts import MAIN_TRAVEL_AGENT_SYSTEM_PROMPT
 from ai.schemas import TravelAgentStructuredResponse
 from ai.schemas.travel import TravelPlanLLMOutput
-from ai.state import TravelState, _apply_transport_budget, _origin_from_state, _trip_dates
+from ai.state import TravelState, apply_transport_budget, get_origin, get_trip_dates
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -48,11 +48,11 @@ async def planner_node(state: TravelState) -> dict:
         raise RuntimeError("The planner produced an invalid response. Please try again.") from exc
 
     updates: dict = {}
-    origin = _origin_from_state(state)
+    origin = get_origin(state)
     if origin:
         updates["origin"] = origin
 
-    trip_dates = _trip_dates(state)
+    trip_dates = get_trip_dates(state)
     if trip_dates:
         updates["start_date"] = trip_dates[0]
         updates["end_date"] = trip_dates[-1]
@@ -67,6 +67,6 @@ async def planner_node(state: TravelState) -> dict:
     if updates:
         result = result.model_copy(update=updates)
 
-    result = _apply_transport_budget(result, state.get("selected_transport_options"))
+    result = apply_transport_budget(result, state.get("selected_transport_options"))
     logger.info("Planner done — %s, %s day(s), budget %s", result.destination, result.days, result.budget.total)
     return {"structured_response": result}

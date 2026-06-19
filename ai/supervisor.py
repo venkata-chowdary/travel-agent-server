@@ -19,11 +19,11 @@ from ai.state import (
     TravelState,
     WorkflowStep,
     WorkflowStatus,
-    _origin_from_state,
-    _state_summary,
-    _status_update,
-    _transport_has_options,
-    _workflow_statuses,
+    build_state_summary,
+    get_origin,
+    get_workflow_statuses,
+    has_transport_options,
+    set_status,
 )
 from config import settings
 
@@ -39,7 +39,7 @@ def _supervisor_messages(
     validation_issue: str | None = None,
 ) -> list[BaseMessage]:
     needs_extraction = (
-        not _origin_from_state(state)
+        not get_origin(state)
         or not state.get("destination")
         or state.get("trip_duration_days") is None
     )
@@ -48,7 +48,7 @@ def _supervisor_messages(
         SystemMessage(content=f"{SUPERVISOR_PROMPT}\n\nToday is {today}."),
         *history_messages,
         HumanMessage(content=state["user_message"]),
-        *_state_summary(state),
+        *build_state_summary(state),
     ]
     if validation_issue:
         messages.append(SystemMessage(content=(
@@ -78,7 +78,7 @@ def _apply_decision_trip_fields(
     decision: SupervisorDecision,
 ) -> tuple[str | None, str | None, int | None, str | None]:
     return (
-        decision.origin or state.get("origin") or _origin_from_state(state),
+        decision.origin or state.get("origin") or get_origin(state),
         decision.destination or state.get("destination"),
         decision.trip_duration_days or state.get("trip_duration_days"),
         decision.trip_start_date or state.get("trip_start_date"),
@@ -100,7 +100,7 @@ def _statuses_after_intent(
     weather_invalidated: bool,
     transport_invalidated: bool,
 ) -> dict[str, WorkflowStatus]:
-    statuses = _workflow_statuses(state)
+    statuses = get_workflow_statuses(state)
 
     if state.get("selected_transport_options") and statuses.get("transport") in ("waiting_for_user", "not_started"):
         statuses["transport"] = "succeeded"
@@ -200,7 +200,7 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
     if decision.companion_note:
         logger.info("Companion reasoning: %s", decision.companion_note)
 
-    previous_origin = state.get("origin") or _origin_from_state(state)
+    previous_origin = state.get("origin") or get_origin(state)
     previous_destination = state.get("destination")
     previous_days = state.get("trip_duration_days")
     previous_start_date = state.get("trip_start_date")
@@ -221,7 +221,7 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
     if validation_issue:
         if (
             statuses.get("transport") == "waiting_for_user"
-            and _transport_has_options(state.get("transport_choice"))
+            and has_transport_options(state.get("transport_choice"))
             and not state.get("selected_transport_options")
         ):
             logger.info("Supervisor: transport options pending user selection — re-routing to transport_agent")

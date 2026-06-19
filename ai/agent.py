@@ -89,7 +89,6 @@ async def init_agent_checkpointing() -> None:
 
     _checkpoint_modules = [
         ("ai.schemas.preferences", "PreferenceContext"),
-        ("ai.schemas.signal", "AgentSignal"),
         ("ai.schemas.transport", "TransportChoiceResponse"),
         ("ai.schemas.transport", "TransportOption"),
         ("ai.schemas.travel", "BudgetBreakdown"),

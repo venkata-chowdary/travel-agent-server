@@ -8,7 +8,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from ai.helpers import get_llm
 from ai.prompts import CLARIFIER_PROMPT
 from ai.schemas import TravelAgentChatResponse
-from ai.state import ClarificationDecision, TravelState, _state_summary, _status_update
+from ai.state import ClarificationDecision, TravelState, build_state_summary, set_status
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ async def clarifier_node(state: TravelState) -> dict:
             SystemMessage(content=CLARIFIER_PROMPT),
             *(state.get("messages") or []),
             HumanMessage(content=state["user_message"]),
-            *_state_summary(state),
+            *build_state_summary(state),
         ])
     except OutputParserException as exc:
         logger.warning("Clarifier output parse failed; assuming clarification needed: %s", exc)
@@ -38,7 +38,7 @@ async def clarifier_node(state: TravelState) -> dict:
         logger.info("Clarifier asking %s question(s)", len(decision.questions))
         return {
             "clarification_checked": True,
-            "workflow_statuses": _status_update(state, "clarification", "waiting_for_user"),
+            "workflow_statuses": set_status(state, "clarification", "waiting_for_user"),
             "clarification_response": TravelAgentChatResponse(
                 response_type="clarification",
                 assistant_message=decision.assistant_message,
@@ -49,5 +49,5 @@ async def clarifier_node(state: TravelState) -> dict:
     logger.info("Clarifier passed; enough detail to plan")
     return {
         "clarification_checked": True,
-        "workflow_statuses": _status_update(state, "clarification", "succeeded"),
+        "workflow_statuses": set_status(state, "clarification", "succeeded"),
     }

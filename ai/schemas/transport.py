@@ -40,6 +40,7 @@ class TransportChoiceResponse(BaseModel):
     recommended_return_id: str | None = None
     unavailable_modes: list[str] = Field(default_factory=list)
     summary: str = Field(min_length=1)
+    supervisor_note: str = Field(default="")
 
 
 class TransportSelection(BaseModel):

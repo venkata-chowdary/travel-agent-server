@@ -171,48 +171,48 @@ class AgentService:
             self._session, session_id, trip_id, response.transport_choice, commit=False,
         )
 
+    async def _find_trip_to_update(
+        self,
+        session_id: str,
+        target_trip_id: UUID | None,
+    ) -> tuple[UUID | None, bool]:
+        """Return (trip_id_to_update, transport_was_skipped).
+
+        Priority: explicit target → draft from transport step → existing by session → None.
+        transport_was_skipped is True when there is no draft, meaning the user skipped
+        transport selection and went straight to planning.
+        """
+        if target_trip_id is not None:
+            return target_trip_id, False
+        draft = await get_draft_trip_by_session(self._session, self._user.id, session_id)
+        if draft is not None:
+            return draft.id, False
+        existing = await get_trip_by_session(self._session, self._user.id, session_id)
+        return (existing.id if existing else None), True
+
     async def _save_trip_plan(
         self,
         session_id: str,
         target_trip_id: UUID | None,
         response: TravelAgentChatResponse,
     ) -> None:
-        transport_was_skipped = False
-        if target_trip_id is not None:
+        trip_id, transport_was_skipped = await self._find_trip_to_update(session_id, target_trip_id)
+
+        finalized = None
+        if trip_id is not None:
             finalized = await update_trip_from_plan(
-                self._session, self._user.id, target_trip_id, response.trip_plan, commit=False,
+                self._session, self._user.id, trip_id, response.trip_plan, commit=False,
             )
-            if finalized is None:
+
+        if finalized is None:
+            if target_trip_id is not None:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="trip not found")
-        else:
-            draft = await get_draft_trip_by_session(self._session, self._user.id, session_id)
-            if draft is not None:
-                finalized = await update_trip_from_plan(
-                    self._session, self._user.id, draft.id, response.trip_plan, commit=False,
-                )
-                if finalized is None:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND, detail="draft trip not found",
-                    )
-            else:
-                transport_was_skipped = True
-                # Guard against duplicate trips if the planner retries in the same session.
-                existing = await get_trip_by_session(self._session, self._user.id, session_id)
-                if existing is not None:
-                    finalized = await update_trip_from_plan(
-                        self._session, self._user.id, existing.id, response.trip_plan, commit=False,
-                    )
-                    if finalized is None:
-                        # Row disappeared between SELECT and UPDATE; create fresh.
-                        finalized = await create_trip(
-                            self._session, self._user.id, response.trip_plan,
-                            session_id=session_id, commit=False,
-                        )
-                else:
-                    finalized = await create_trip(
-                        self._session, self._user.id, response.trip_plan,
-                        session_id=session_id, commit=False,
-                    )
+            # No existing record (or row disappeared between SELECT and UPDATE) — create fresh.
+            finalized = await create_trip(
+                self._session, self._user.id, response.trip_plan,
+                session_id=session_id, commit=False,
+            )
+
         await link_transport_options_to_trip(
             self._session, finalized.id, response.trip_plan.transport_options,
             was_skipped=transport_was_skipped, commit=False,

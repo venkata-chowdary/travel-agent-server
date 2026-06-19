@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DailyForecast(BaseModel):
@@ -27,3 +27,11 @@ class WeatherForecastResponse(BaseModel):
     daily_forecast: list[DailyForecast]
     trip_risks: list[TripRisk]
     requires_replanning: bool
+    supervisor_note: str = Field(
+        default="",
+        description=(
+            "One sentence addressed to the supervisor. State what you found and flag "
+            "any concern the planner should act on before building the itinerary. "
+            "Example: '3 of 5 days show heavy rain — recommend alerting the user before planning outdoor activities.'"
+        ),
+    )

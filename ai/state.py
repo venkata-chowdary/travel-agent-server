@@ -7,7 +7,6 @@ from langchain_core.messages import BaseMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from ai.schemas import (
-    AgentSignal,
     PreferenceContext,
     TravelAgentChatResponse,
     TravelAgentStructuredResponse,
@@ -97,11 +96,8 @@ class TravelState(TypedDict):
     clarification_checked: bool
     clarification_response: TravelAgentChatResponse | None
     preference_context: PreferenceContext | None
-    preference_signal: AgentSignal | None
     weather_forecast: WeatherForecastResponse | None
-    weather_signal: AgentSignal | None
     transport_choice: TransportChoiceResponse | None
-    transport_signal: AgentSignal | None
     selected_transport_options: list[TransportOption] | None
     structured_response: TravelAgentStructuredResponse | None
     workflow_statuses: dict[str, WorkflowStatus]
@@ -109,7 +105,7 @@ class TravelState(TypedDict):
 
 # ── Helpers that read or derive values from TravelState ───────────────────────
 
-def _preference_has_data(ctx: PreferenceContext | None) -> bool:
+def has_preference_data(ctx: PreferenceContext | None) -> bool:
     return bool(
         ctx
         and (
@@ -125,18 +121,18 @@ def _preference_has_data(ctx: PreferenceContext | None) -> bool:
     )
 
 
-def _transport_has_options(choice: TransportChoiceResponse | None) -> bool:
+def has_transport_options(choice: TransportChoiceResponse | None) -> bool:
     return bool(choice and (choice.outbound_options or choice.return_options))
 
 
-def _origin_from_state(state: TravelState) -> str | None:
+def get_origin(state: TravelState) -> str | None:
     if state.get("origin"):
         return state["origin"]
     prefs = state.get("preference_context")
     return prefs.origin if prefs and prefs.origin else None
 
 
-def _trip_dates(state: TravelState) -> list[str]:
+def get_trip_dates(state: TravelState) -> list[str]:
     days = state.get("trip_duration_days") or 3
     start_str = state.get("trip_start_date")
     try:
@@ -146,7 +142,7 @@ def _trip_dates(state: TravelState) -> list[str]:
     return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
 
 
-def _workflow_statuses(state: TravelState) -> dict[str, WorkflowStatus]:
+def get_workflow_statuses(state: TravelState) -> dict[str, WorkflowStatus]:
     raw = state.get("workflow_statuses") or {}
     allowed: set[str] = {"not_started", "waiting_for_user", "succeeded", "empty", "failed", "skipped_by_user"}
     return {
@@ -155,25 +151,16 @@ def _workflow_statuses(state: TravelState) -> dict[str, WorkflowStatus]:
     }
 
 
-def _status_update(state: TravelState, step: WorkflowStep, status: WorkflowStatus) -> dict[str, WorkflowStatus]:
-    statuses = _workflow_statuses(state)
+def set_status(state: TravelState, step: WorkflowStep, status: WorkflowStatus) -> dict[str, WorkflowStatus]:
+    statuses = get_workflow_statuses(state)
     statuses[step] = status
     return statuses
 
 
-def _signal_line(signal: AgentSignal | None) -> str:
-    if signal is None:
-        return "  → judgment: not yet assessed"
-    if signal.signal_type == "no_action_needed":
-        return f"  → judgment: ✓ no_action_needed — {signal.message}"
-    severity_tag = {"low": "", "medium": " ⚠", "high": " 🚨"}[signal.severity]
-    return f"  → judgment:{severity_tag} {signal.signal_type.upper()} ({signal.severity}) — {signal.message}"
-
-
-def _state_summary(state: TravelState) -> list[BaseMessage]:
+def build_state_summary(state: TravelState) -> list[BaseMessage]:
     lines: list[str] = []
-    statuses = _workflow_statuses(state)
-    origin = _origin_from_state(state)
+    statuses = get_workflow_statuses(state)
+    origin = get_origin(state)
     destination = state.get("destination")
 
     # ── Trip basics ───────────────────────────────────────────────────────────
@@ -195,9 +182,10 @@ def _state_summary(state: TravelState) -> list[BaseMessage]:
         lines.append(f"  hotel_preference:    {prefs.hotel_preference or 'unknown'}")
         lines.append(f"  avoid:               {avoid}")
         lines.append(f"  memory_confidence:   {prefs.memory_confidence:.2f}")
+        if prefs.supervisor_note:
+            lines.append(f"  → {prefs.supervisor_note}")
     else:
         lines.append("\nUser profile: NOT YET COLLECTED")
-    lines.append(_signal_line(state.get("preference_signal")))
 
     # ── Clarification ─────────────────────────────────────────────────────────
     lines.append(f"\nClarification: {'CHECKED' if state.get('clarification_checked') else 'NOT YET CHECKED'}")
@@ -207,30 +195,35 @@ def _state_summary(state: TravelState) -> list[BaseMessage]:
     if forecast:
         high_risk = [d for d in (forecast.daily_forecast or []) if d.risk_level == "high"]
         lines.append(f"\nWeather at {forecast.destination}:")
-        lines.append(f"  summary:          {forecast.summary}")
+        lines.append(f"  summary:             {forecast.summary}")
         lines.append(f"  requires_replanning: {forecast.requires_replanning}")
         if high_risk:
-            lines.append(f"  high-risk days:   {', '.join(d.date for d in high_risk)}")
+            lines.append(f"  high-risk days:      {', '.join(d.date for d in high_risk)}")
+        if forecast.supervisor_note:
+            lines.append(f"  → {forecast.supervisor_note}")
     elif destination:
         lines.append(f"\nWeather: NOT YET COLLECTED (destination: {destination})")
     else:
         lines.append("\nWeather: N/A (no destination yet)")
-    lines.append(_signal_line(state.get("weather_signal")))
 
     # ── Transport ─────────────────────────────────────────────────────────────
     if state.get("selected_transport_options"):
         lines.append("\nTransport: SELECTED BY USER")
-    elif _transport_has_options(state.get("transport_choice")):
+    elif has_transport_options(state.get("transport_choice")):
         choice = state["transport_choice"]
         n = len(choice.outbound_options or []) + len(choice.return_options or [])
         lines.append(f"\nTransport: SEARCHED — {n} option(s) found (awaiting user selection)")
+        if choice.supervisor_note:
+            lines.append(f"  → {choice.supervisor_note}")
     elif state.get("transport_choice"):
+        choice = state["transport_choice"]
         lines.append("\nTransport: SEARCHED — no options found")
+        if choice.supervisor_note:
+            lines.append(f"  → {choice.supervisor_note}")
     elif origin and destination:
         lines.append(f"\nTransport: NOT YET SEARCHED ({origin} → {destination})")
     else:
         lines.append("\nTransport: N/A (origin or destination unknown)")
-    lines.append(_signal_line(state.get("transport_signal")))
 
     # ── Workflow ledger ───────────────────────────────────────────────────────
     lines.append("\nWorkflow ledger:")
@@ -240,7 +233,7 @@ def _state_summary(state: TravelState) -> list[BaseMessage]:
     return [SystemMessage(content="Current state:\n" + "\n".join(lines))]
 
 
-def _apply_transport_budget(
+def apply_transport_budget(
     result: TravelAgentStructuredResponse,
     selected_options: list[TransportOption] | None,
 ) -> TravelAgentStructuredResponse:

@@ -1781,5 +1781,36 @@
         "available_seats": 20
       }
     ]
+  },
+  {
+    "id": "trn_064",
+    "provider": "MockRail",
+    "train_name": "Secunderabad Jaipur Express",
+    "train_number": "12059",
+    "source": "HYD",
+    "destination": "JAI",
+    "departure_hour": "11:45",
+    "arrival_hour": "09:30",
+    "arrival_day_offset": 1,
+    "duration_minutes": 1305,
+    "status": "scheduled",
+    "rating": 3.7,
+    "class_options": [
+      {
+        "class_type": "sleeper",
+        "price": 580,
+        "available_seats": 200
+      },
+      {
+        "class_type": "3ac",
+        "price": 1450,
+        "available_seats": 72
+      },
+      {
+        "class_type": "2ac",
+        "price": 2100,
+        "available_seats": 36
+      }
+    ]
   }
 ]

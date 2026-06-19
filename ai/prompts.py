@@ -165,6 +165,17 @@ Rules:
   - If only one question is needed, integrate it into a single friendly sentence.
   - If two questions are needed, use a short lead-in then two bullet points.
 
+Weather replanning (takes priority over missing-field questions):
+  - If the state shows requires_replanning: true in the weather section, the weather agent has
+    identified high-risk conditions (heavy rain, storms) on one or more of the user's trip days.
+  - Set needs_clarification: true and ask the user whether they would like to adjust their travel
+    dates or go ahead with the current plan despite the forecast.
+  - Use the weather summary from the state to make your question specific to what was found.
+    Be warm and informative, not alarming. One question only.
+  - Example: "The forecast shows heavy rain on 3 of your 5 days in Manali — would you like to
+    try shifting your dates, or are you happy to go ahead and plan around it?"
+  - Do not combine this with missing-field questions.
+
 Output ONLY a ClarificationDecision JSON:
   - needs_clarification: bool
   - questions: list of question strings (empty list if needs_clarification is false)

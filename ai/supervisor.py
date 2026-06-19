@@ -217,6 +217,32 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
     transport_invalidated = origin_changed or destination_changed or days_changed or start_date_changed
 
     statuses = _statuses_after_intent(state, decision, weather_invalidated, transport_invalidated)
+
+    # Programmatic gate: weather flagged high-risk conditions and transport hasn't run yet.
+    # Route to clarifier so the user can decide about their dates before transport search begins.
+    # Guard: weather_replan_prompted prevents asking again on the next turn after the user responds.
+    # Reset: when dates change (weather_invalidated), weather_replan_prompted is cleared below so
+    # the user can be prompted again if the new dates are also risky.
+    _forecast = state.get("weather_forecast")
+    if (
+        not weather_invalidated
+        and _forecast
+        and _forecast.requires_replanning
+        and statuses.get("transport") == "not_started"
+        and not state.get("weather_replan_prompted")
+    ):
+        logger.info(
+            "Supervisor: weather requires_replanning=True — intercepting before transport, routing to clarifier"
+        )
+        return Command(goto="clarifier", update={
+            "origin": origin,
+            "destination": destination,
+            "trip_duration_days": trip_duration_days,
+            "trip_start_date": trip_start_date,
+            "workflow_statuses": statuses,
+            "weather_replan_prompted": True,
+        })
+
     validation_issue = _validate_supervisor_decision(decision, origin, destination, trip_duration_days, statuses)
 
     if validation_issue:
@@ -286,6 +312,7 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
     }
     if weather_invalidated:
         updates["weather_forecast"] = None
+        updates["weather_replan_prompted"] = False
     if transport_invalidated:
         updates["transport_choice"] = None
         updates["selected_transport_options"] = None

@@ -99,6 +99,7 @@ class TravelState(TypedDict):
     clarification_response: TravelAgentChatResponse | None
     preference_context: PreferenceContext | None
     weather_forecast: WeatherForecastResponse | None
+    weather_replan_prompted: bool
     transport_choice: TransportChoiceResponse | None
     selected_transport_options: list[TransportOption] | None
     hotel_choice: HotelChoiceResponse | None

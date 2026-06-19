@@ -7,6 +7,7 @@ from langchain_core.messages import BaseMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from ai.schemas import (
+    AgentSignal,
     PreferenceContext,
     TravelAgentChatResponse,
     TravelAgentStructuredResponse,
@@ -73,6 +74,14 @@ class SupervisorDecision(BaseModel):
             "'from the 15th' → nearest future 15th of any month. Null if no start date is mentioned."
         ),
     )
+    companion_note: str | None = Field(
+        default=None,
+        description=(
+            "Your brief internal observation about what you noticed in the current state "
+            "that influenced this decision. E.g. 'Budget traveller asking for Maldives in peak "
+            "season — worth surfacing before transport search.' Used for logging and transparency."
+        ),
+    )
 
 
 # ── The shared state bag passed between every node ────────────────────────────
@@ -88,8 +97,11 @@ class TravelState(TypedDict):
     clarification_checked: bool
     clarification_response: TravelAgentChatResponse | None
     preference_context: PreferenceContext | None
+    preference_signal: AgentSignal | None
     weather_forecast: WeatherForecastResponse | None
+    weather_signal: AgentSignal | None
     transport_choice: TransportChoiceResponse | None
+    transport_signal: AgentSignal | None
     selected_transport_options: list[TransportOption] | None
     structured_response: TravelAgentStructuredResponse | None
     workflow_statuses: dict[str, WorkflowStatus]
@@ -134,55 +146,13 @@ def _trip_dates(state: TravelState) -> list[str]:
     return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
 
 
-def _legacy_workflow_status(state: TravelState, step: WorkflowStep) -> WorkflowStatus:
-    if step == "preferences":
-        if state.get("preference_context"):
-            return "succeeded" if _preference_has_data(state.get("preference_context")) else "empty"
-        return "not_started"
-
-    if step == "clarification":
-        if state.get("clarification_response"):
-            return "waiting_for_user"
-        if state.get("clarification_checked"):
-            return "succeeded"
-        return "not_started"
-
-    if step == "weather":
-        forecast = state.get("weather_forecast")
-        if forecast:
-            return "succeeded" if forecast.daily_forecast else "empty"
-        return "not_started"
-
-    if step == "transport":
-        if state.get("selected_transport_options"):
-            return "succeeded"
-        choice = state.get("transport_choice")
-        if choice:
-            # Options found but user hasn't selected yet — keep blocking the planner.
-            return "waiting_for_user" if _transport_has_options(choice) else "empty"
-        return "not_started"
-
-    return "not_started"
-
-
 def _workflow_statuses(state: TravelState) -> dict[str, WorkflowStatus]:
     raw = state.get("workflow_statuses") or {}
-    statuses: dict[str, WorkflowStatus] = {}
-    allowed = {"not_started", "waiting_for_user", "succeeded", "empty", "failed", "skipped_by_user"}
-    for step in WORKFLOW_STEPS:
-        legacy_status = _legacy_workflow_status(state, step)
-        value = raw.get(step)
-        # Legacy inference can override the checkpoint only when the checkpoint
-        # has no meaningful value yet — never overwrite a stored 'failed' status.
-        if (
-            step in {"clarification", "transport"}
-            and legacy_status in {"waiting_for_user", "succeeded"}
-            and (value is None or value == "not_started")
-        ):
-            statuses[step] = legacy_status
-        else:
-            statuses[step] = cast(WorkflowStatus, value) if value in allowed else legacy_status
-    return statuses
+    allowed: set[str] = {"not_started", "waiting_for_user", "succeeded", "empty", "failed", "skipped_by_user"}
+    return {
+        step: cast(WorkflowStatus, raw[step]) if raw.get(step) in allowed else "not_started"
+        for step in WORKFLOW_STEPS
+    }
 
 
 def _status_update(state: TravelState, step: WorkflowStep, status: WorkflowStatus) -> dict[str, WorkflowStatus]:
@@ -191,49 +161,81 @@ def _status_update(state: TravelState, step: WorkflowStep, status: WorkflowStatu
     return statuses
 
 
+def _signal_line(signal: AgentSignal | None) -> str:
+    if signal is None:
+        return "  → judgment: not yet assessed"
+    if signal.signal_type == "no_action_needed":
+        return f"  → judgment: ✓ no_action_needed — {signal.message}"
+    severity_tag = {"low": "", "medium": " ⚠", "high": " 🚨"}[signal.severity]
+    return f"  → judgment:{severity_tag} {signal.signal_type.upper()} ({signal.severity}) — {signal.message}"
+
+
 def _state_summary(state: TravelState) -> list[BaseMessage]:
     lines: list[str] = []
     statuses = _workflow_statuses(state)
-
-    if state.get("preference_context"):
-        prefs = state["preference_context"]
-        origin = prefs.origin or "unknown"
-        lines.append(f"- preference_context: COLLECTED (origin: {origin})")
-    else:
-        lines.append("- preference_context: MISSING")
-
-    if state.get("clarification_checked"):
-        lines.append("- clarification: CHECKED")
-    else:
-        lines.append("- clarification: NOT YET CHECKED")
-
     origin = _origin_from_state(state)
     destination = state.get("destination")
-    lines.append(f"- origin: {origin or 'UNKNOWN'}")
-    lines.append(f"- destination: {destination or 'UNKNOWN'}")
-    lines.append(f"- trip_duration_days: {state.get('trip_duration_days') or 'UNKNOWN'}")
-    lines.append(f"- trip_start_date: {state.get('trip_start_date') or 'UNKNOWN'}")
-    lines.append("- workflow ledger:")
-    for step in WORKFLOW_STEPS:
-        lines.append(f"  - {step}: {statuses[step]}")
 
-    if state.get("weather_forecast"):
-        lines.append("- weather_forecast: COLLECTED")
+    # ── Trip basics ───────────────────────────────────────────────────────────
+    lines.append("Trip basics:")
+    lines.append(f"  origin:             {origin or 'UNKNOWN'}")
+    lines.append(f"  destination:        {destination or 'UNKNOWN'}")
+    lines.append(f"  trip_duration_days: {state.get('trip_duration_days') or 'UNKNOWN'}")
+    lines.append(f"  trip_start_date:    {state.get('trip_start_date') or 'UNKNOWN'}")
+
+    # ── User profile (preference agent findings) ──────────────────────────────
+    prefs = state.get("preference_context")
+    if prefs:
+        avoid = ", ".join(prefs.avoid) if prefs.avoid else "none"
+        lines.append("\nUser profile (from preference agent):")
+        lines.append(f"  travel_style:        {prefs.travel_style or 'unknown'}")
+        lines.append(f"  budget_style:        {prefs.budget_style or 'unknown'}")
+        lines.append(f"  preferred_transport: {', '.join(prefs.preferred_transport) if prefs.preferred_transport else 'unknown'}")
+        lines.append(f"  food_preference:     {prefs.food_preference or 'unknown'}")
+        lines.append(f"  hotel_preference:    {prefs.hotel_preference or 'unknown'}")
+        lines.append(f"  avoid:               {avoid}")
+        lines.append(f"  memory_confidence:   {prefs.memory_confidence:.2f}")
+    else:
+        lines.append("\nUser profile: NOT YET COLLECTED")
+    lines.append(_signal_line(state.get("preference_signal")))
+
+    # ── Clarification ─────────────────────────────────────────────────────────
+    lines.append(f"\nClarification: {'CHECKED' if state.get('clarification_checked') else 'NOT YET CHECKED'}")
+
+    # ── Weather findings ──────────────────────────────────────────────────────
+    forecast = state.get("weather_forecast")
+    if forecast:
+        high_risk = [d for d in (forecast.daily_forecast or []) if d.risk_level == "high"]
+        lines.append(f"\nWeather at {forecast.destination}:")
+        lines.append(f"  summary:          {forecast.summary}")
+        lines.append(f"  requires_replanning: {forecast.requires_replanning}")
+        if high_risk:
+            lines.append(f"  high-risk days:   {', '.join(d.date for d in high_risk)}")
     elif destination:
-        lines.append(f"- weather_forecast: NOT YET COLLECTED (destination: {destination})")
+        lines.append(f"\nWeather: NOT YET COLLECTED (destination: {destination})")
     else:
-        lines.append("- weather_forecast: N/A (no destination yet)")
+        lines.append("\nWeather: N/A (no destination yet)")
+    lines.append(_signal_line(state.get("weather_signal")))
 
+    # ── Transport ─────────────────────────────────────────────────────────────
     if state.get("selected_transport_options"):
-        lines.append("- transport: SELECTED BY USER")
+        lines.append("\nTransport: SELECTED BY USER")
     elif _transport_has_options(state.get("transport_choice")):
-        lines.append("- transport: SEARCHED, OPTIONS FOUND (awaiting user selection or proceed instruction)")
+        choice = state["transport_choice"]
+        n = len(choice.outbound_options or []) + len(choice.return_options or [])
+        lines.append(f"\nTransport: SEARCHED — {n} option(s) found (awaiting user selection)")
     elif state.get("transport_choice"):
-        lines.append("- transport: SEARCHED, NO OPTIONS FOUND")
+        lines.append("\nTransport: SEARCHED — no options found")
     elif origin and destination:
-        lines.append(f"- transport: NOT YET OFFERED (origin: {origin}, destination: {destination})")
+        lines.append(f"\nTransport: NOT YET SEARCHED ({origin} → {destination})")
     else:
-        lines.append("- transport: N/A (origin or destination unknown)")
+        lines.append("\nTransport: N/A (origin or destination unknown)")
+    lines.append(_signal_line(state.get("transport_signal")))
+
+    # ── Workflow ledger ───────────────────────────────────────────────────────
+    lines.append("\nWorkflow ledger:")
+    for step in WORKFLOW_STEPS:
+        lines.append(f"  {step}: {statuses[step]}")
 
     return [SystemMessage(content="Current state:\n" + "\n".join(lines))]
 

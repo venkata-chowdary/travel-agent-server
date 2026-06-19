@@ -3,10 +3,11 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
+from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
-from ai.helpers import GeminiClient, format_preferences_block, format_transport_block, format_weather_block
+from ai.helpers import get_llm, format_preferences_block, format_transport_block, format_weather_block
 from ai.prompts import MAIN_TRAVEL_AGENT_SYSTEM_PROMPT
 from ai.schemas import TravelAgentStructuredResponse
 from ai.schemas.travel import TravelPlanLLMOutput
@@ -14,7 +15,7 @@ from ai.state import TravelState, _apply_transport_budget, _origin_from_state, _
 from config import settings
 
 logger = logging.getLogger(__name__)
-_llm = GeminiClient(model=settings.llm_model, temperature=settings.llm_temperature)
+_llm = get_llm(model=settings.llm_model, temperature=settings.llm_temperature)
 
 
 async def planner_node(state: TravelState) -> dict:
@@ -32,9 +33,13 @@ async def planner_node(state: TravelState) -> dict:
         messages.extend(state["messages"])
     messages.append(HumanMessage(content=state["user_message"]))
 
-    plan: TravelPlanLLMOutput = await _llm.with_structured_output(
-        TravelPlanLLMOutput, method="json_schema"
-    ).ainvoke(messages)
+    try:
+        plan: TravelPlanLLMOutput = await _llm.with_structured_output(
+            TravelPlanLLMOutput, method="json_schema"
+        ).ainvoke(messages)
+    except OutputParserException as exc:
+        logger.error("Planner LLM output failed schema validation: %s", exc)
+        raise RuntimeError("The planner produced a malformed response. Please try again.") from exc
 
     try:
         result = TravelAgentStructuredResponse.model_validate(plan.model_dump())

@@ -8,6 +8,7 @@ python-dotenv
 email-validator
 langchain-core
 langchain-google-genai
+langchain-groq
 langgraph
 langgraph-checkpoint-postgres
 psycopg[binary]

@@ -78,6 +78,7 @@ SCHEMA_COMPATIBILITY_STATEMENTS = (
     "ALTER TABLE trips ADD COLUMN IF NOT EXISTS transport_status VARCHAR(32) NOT NULL DEFAULT 'not_searched'",
     "ALTER TABLE trips ADD COLUMN IF NOT EXISTS session_id VARCHAR(255)",
     "CREATE INDEX IF NOT EXISTS ix_trips_session_id ON trips (session_id)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS uq_trips_draft_user_session ON trips (user_id, session_id) WHERE status = 'draft'",
 )
 
 

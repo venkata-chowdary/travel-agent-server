@@ -87,14 +87,24 @@ async def init_agent_checkpointing() -> None:
             "Run: pip install -r requirements.txt"
         ) from exc
 
-    serde = JsonPlusSerializer(allowed_json_modules=[
+    _checkpoint_modules = [
         ("ai.schemas.preferences", "PreferenceContext"),
+        ("ai.schemas.signal", "AgentSignal"),
         ("ai.schemas.transport", "TransportChoiceResponse"),
         ("ai.schemas.transport", "TransportOption"),
+        ("ai.schemas.travel", "BudgetBreakdown"),
+        ("ai.schemas.travel", "ItineraryDay"),
+        ("ai.schemas.travel", "ItineraryItem"),
+        ("ai.schemas.travel", "TravelAgentChatResponse"),
+        ("ai.schemas.travel", "TravelAgentStructuredResponse"),
         ("ai.schemas.weather", "WeatherForecastResponse"),
         ("ai.schemas.weather", "DailyForecast"),
         ("ai.schemas.weather", "TripRisk"),
-    ])
+    ]
+    serde = JsonPlusSerializer(
+        allowed_json_modules=_checkpoint_modules,
+        allowed_msgpack_modules=_checkpoint_modules,
+    )
     _checkpoint_pool = AsyncConnectionPool(
         conninfo=_checkpoint_database_url(settings.database_url),
         kwargs={"autocommit": True, "prepare_threshold": 0, "row_factory": dict_row},
@@ -157,23 +167,41 @@ async def run_travel_agent(
             await close_agent_checkpointing()
             await init_agent_checkpointing()
             result = await agent.ainvoke(input_state, config=config)
+        elif isinstance(exc, RuntimeError):
+            logger.error("Agent node raised RuntimeError: %s", exc)
+            return TravelAgentChatResponse(
+                response_type="clarification",
+                assistant_message=str(exc),
+                questions=[],
+            )
         else:
             raise
 
     if result.get("clarification_response"):
         return result["clarification_response"]
 
-    if result.get("transport_choice"):
-        choice = result["transport_choice"]
+    transport_choice = result.get("transport_choice")
+    if transport_choice and (transport_choice.outbound_options or transport_choice.return_options):
         return TravelAgentChatResponse(
             response_type="transport_choice",
-            assistant_message=choice.summary,
-            transport_choice=choice,
+            assistant_message=transport_choice.summary,
+            transport_choice=transport_choice,
         )
 
-    trip_plan = result["structured_response"]
-    return TravelAgentChatResponse(
-        response_type="trip_plan",
-        assistant_message=f"Here's an idea for your {trip_plan.days}-day trip to {trip_plan.destination}.",
-        trip_plan=trip_plan,
-    )
+    trip_plan = result.get("structured_response")
+    if trip_plan is not None:
+        return TravelAgentChatResponse(
+            response_type="trip_plan",
+            assistant_message=f"Here's an idea for your {trip_plan.days}-day trip to {trip_plan.destination}.",
+            trip_plan=trip_plan,
+        )
+
+    # Transport search ran but found no options — tell the user rather than 500-ing.
+    if transport_choice:
+        return TravelAgentChatResponse(
+            response_type="clarification",
+            assistant_message=transport_choice.summary,
+            questions=[],
+        )
+
+    raise RuntimeError("Agent completed without producing a plan, clarification, or transport choice.")

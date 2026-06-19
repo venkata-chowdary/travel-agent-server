@@ -1,5 +1,6 @@
 from .flight import FlightOption
 from .preferences import PastTrip, PreferenceContext, TravelPreferences, UserProfile
+from .signal import AgentSignal
 from .transport import TransportChoiceResponse, TransportOption, TransportSelection
 from .travel import (
     BudgetBreakdown,
@@ -12,6 +13,7 @@ from .travel import (
 from .weather import DailyForecast, TripRisk, WeatherForecastResponse
 
 __all__ = [
+    "AgentSignal",
     "BudgetBreakdown",
     "DailyForecast",
     "FlightOption",

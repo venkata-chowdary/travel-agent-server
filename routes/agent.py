@@ -195,6 +195,8 @@ async def chat(
                     session, current_user.id, body.session_id, response.transport_choice,
                     commit=False,
                 )
+                if draft is None:
+                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create draft trip")
                 trip_id_for_transport = draft.id
             await save_transport_options(
                 session, body.session_id, trip_id_for_transport, response.transport_choice,
@@ -219,6 +221,8 @@ async def chat(
                         session, current_user.id, draft.id, response.trip_plan,
                         commit=False,
                     )
+                    if finalized is None:
+                        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="draft trip not found")
                 else:
                     # Transport was skipped/not applicable.
                     transport_was_skipped = True
@@ -229,6 +233,12 @@ async def chat(
                             session, current_user.id, existing.id, response.trip_plan,
                             commit=False,
                         )
+                        if finalized is None:
+                            # Row disappeared between the SELECT and the UPDATE; create fresh.
+                            finalized = await create_trip(
+                                session, current_user.id, response.trip_plan,
+                                session_id=body.session_id, commit=False,
+                            )
                     else:
                         finalized = await create_trip(
                             session, current_user.id, response.trip_plan,

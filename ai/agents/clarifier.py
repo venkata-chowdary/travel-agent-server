@@ -2,28 +2,37 @@ from __future__ import annotations
 
 import logging
 
+from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from ai.helpers import GeminiClient
+from ai.helpers import get_llm
 from ai.prompts import CLARIFIER_PROMPT
 from ai.schemas import TravelAgentChatResponse
 from ai.state import ClarificationDecision, TravelState, _state_summary, _status_update
 from config import settings
 
 logger = logging.getLogger(__name__)
-_llm = GeminiClient(model=settings.llm_model, temperature=settings.llm_temperature)
+_llm = get_llm(model=settings.llm_model, temperature=settings.llm_temperature)
 
 
 async def clarifier_node(state: TravelState) -> dict:
     logger.info("Clarifier running — LLM deciding whether clarification is needed")
-    decision: ClarificationDecision = await _llm.with_structured_output(
-        ClarificationDecision, method="json_schema"
-    ).ainvoke([
-        SystemMessage(content=CLARIFIER_PROMPT),
-        *(state.get("messages") or []),
-        HumanMessage(content=state["user_message"]),
-        *_state_summary(state),
-    ])
+    try:
+        decision: ClarificationDecision = await _llm.with_structured_output(
+            ClarificationDecision, method="json_schema"
+        ).ainvoke([
+            SystemMessage(content=CLARIFIER_PROMPT),
+            *(state.get("messages") or []),
+            HumanMessage(content=state["user_message"]),
+            *_state_summary(state),
+        ])
+    except OutputParserException as exc:
+        logger.warning("Clarifier output parse failed; assuming clarification needed: %s", exc)
+        decision = ClarificationDecision(
+            needs_clarification=True,
+            questions=["Could you clarify your trip details — destination, origin, and how many days?"],
+            assistant_message="I had trouble understanding the request. Could you clarify your trip details — where you're going, where you're leaving from, and how many days you'd like?",
+        )
 
     if decision.needs_clarification:
         logger.info("Clarifier asking %s question(s)", len(decision.questions))

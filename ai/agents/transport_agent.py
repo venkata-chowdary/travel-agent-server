@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from ai.schemas import PreferenceContext
+from ai.schemas.signal import AgentSignal
 from ai.schemas.transport import TransportChoiceResponse, TransportLeg, TransportOption
 from ai.state import TravelState, _origin_from_state, _status_update, _transport_has_options, _trip_dates
 from mock_apis.services import search_buses, search_flights, search_trains
@@ -255,13 +256,53 @@ def _rank_key(option: TransportOption, preferred_transport: list[str]) -> tuple[
     return (preference_penalty, option.price, rating_penalty, option.available_seats * -1)
 
 
+def _transport_signal(choice: TransportChoiceResponse) -> AgentSignal:
+    has_options = _transport_has_options(choice)
+    if not has_options:
+        return AgentSignal(
+            signal_type="clarification_needed",
+            severity="medium",
+            message=(
+                f"I couldn't find any transport options for {choice.origin} → {choice.destination} "
+                f"on {choice.start_date}. Different dates or a nearby departure city might help. "
+                "The user can also choose to proceed without transport selection."
+            ),
+        )
+    outbound_modes = {o.mode for o in (choice.outbound_options or [])}
+    return_modes = {o.mode for o in (choice.return_options or [])}
+    all_modes = outbound_modes | return_modes
+    missing = [m for m in ("flight", "train", "bus") if m not in all_modes]
+    n_total = len(choice.outbound_options or []) + len(choice.return_options or [])
+    if missing:
+        return AgentSignal(
+            signal_type="alternative_available",
+            severity="low",
+            message=(
+                f"Found {n_total} transport option(s) across {', '.join(sorted(all_modes))}. "
+                f"{', '.join(missing).title()} not available on this route."
+            ),
+        )
+    return AgentSignal(
+        signal_type="no_action_needed",
+        severity="low",
+        message=f"Found {n_total} option(s) across flight, train, and bus for {choice.origin} → {choice.destination}.",
+    )
+
+
 async def transport_agent_node(state: TravelState) -> dict:
     origin = _origin_from_state(state)
     destination = state.get("destination")
     trip_dates = _trip_dates(state)
     if not origin or not destination:
         logger.info("TransportAgent skipped; missing origin or destination")
-        return {"workflow_statuses": _status_update(state, "transport", "failed")}
+        return {
+            "transport_signal": AgentSignal(
+                signal_type="clarification_needed",
+                severity="medium",
+                message="Transport search skipped — origin or destination is unknown.",
+            ),
+            "workflow_statuses": _status_update(state, "transport", "failed"),
+        }
 
     logger.info("TransportAgent running — %s to %s on %s", origin, destination, trip_dates[0])
     choice = build_transport_choice(
@@ -272,13 +313,15 @@ async def transport_agent_node(state: TravelState) -> dict:
         travelers=1,
         preferences=state.get("preference_context"),
     )
+    signal = _transport_signal(choice)
     logger.info(
-        "TransportAgent found %s outbound and %s return option(s)",
-        len(choice.outbound_options), len(choice.return_options),
+        "TransportAgent found %s outbound and %s return option(s) | signal: %s",
+        len(choice.outbound_options), len(choice.return_options), signal.signal_type,
     )
     return {
         "transport_choice": choice,
+        "transport_signal": signal,
         "workflow_statuses": _status_update(
-            state, "transport", "succeeded" if _transport_has_options(choice) else "empty"
+            state, "transport", "waiting_for_user" if _transport_has_options(choice) else "empty"
         ),
     }

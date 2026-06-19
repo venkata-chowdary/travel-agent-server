@@ -164,9 +164,6 @@ async def chat(
         transport_selection=body.transport_selection,
     )
 
-    if body.target_trip_id is not None and response.response_type == "trip_plan" and response.trip_plan is not None:
-        response.trip_plan = response.trip_plan.model_copy(update={"id": str(body.target_trip_id)})
-
     user_payload = {
         "target_trip_id": str(body.target_trip_id) if body.target_trip_id else None,
         "transport_selection": _dump(body.transport_selection) if body.transport_selection else None,
@@ -248,6 +245,7 @@ async def chat(
                 session, finalized.id, response.trip_plan.transport_options,
                 was_skipped=transport_was_skipped, commit=False,
             )
+            response.trip_plan = response.trip_plan.model_copy(update={"id": str(finalized.id)})
 
     logger.info("Chat response ready [session=%s]", body.session_id[:8])
     return response

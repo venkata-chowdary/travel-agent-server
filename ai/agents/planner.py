@@ -20,13 +20,21 @@ _llm = get_llm(model=settings.llm_model, temperature=settings.llm_temperature)
 
 async def planner_node(state: TravelState) -> dict:
     logger.info("Planner generating trip plan...")
+    num_travelers = state.get("num_travelers") or 1
     date_line = f"\nToday is {datetime.now(timezone.utc).strftime('%A, %Y-%m-%d')} (UTC)."
+    travelers_line = (
+        f"\nThis trip is for {num_travelers} travelers. "
+        "Scale activities and food budget for the full group. "
+        f"Set travelers={num_travelers} in your output."
+        if num_travelers > 1 else ""
+    )
     system_prompt = (
         MAIN_TRAVEL_AGENT_SYSTEM_PROMPT
         + date_line
+        + travelers_line
         + format_preferences_block(state.get("preference_context"))
         + format_weather_block(state.get("weather_forecast"))
-        + format_transport_block(state.get("selected_transport_options"))
+        + format_transport_block(state.get("selected_transport_options"), num_travelers)
         + format_hotel_block(state.get("selected_hotel_option"))
     )
     messages = [SystemMessage(content=system_prompt)]
@@ -70,7 +78,7 @@ async def planner_node(state: TravelState) -> dict:
 
     selected_options = state.get("selected_transport_options")
     if selected_options:
-        transport_total = sum(opt.price for opt in selected_options)
+        transport_total = sum(opt.price for opt in selected_options) * num_travelers
         result = result.model_copy(update={
             "budget": result.budget.model_copy(update={
                 "flights": transport_total,

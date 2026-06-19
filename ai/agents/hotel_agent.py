@@ -144,7 +144,7 @@ def hotel_agent_node(state: TravelState) -> dict:
     days = state.get("trip_duration_days") or 3
     checkout = _checkout_date(checkin, days)
     prefs = state.get("preference_context")
-    travelers = 1
+    travelers = state.get("num_travelers") or 1
 
     result = build_hotel_choice(
         destination=destination,

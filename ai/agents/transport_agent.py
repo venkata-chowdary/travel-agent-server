@@ -286,7 +286,7 @@ async def transport_agent_node(state: TravelState) -> dict:
         destination=destination,
         start_date=trip_dates[0],
         days=state.get("trip_duration_days") or len(trip_dates),
-        travelers=1,
+        travelers=state.get("num_travelers") or 1,
         preferences=state.get("preference_context"),
     )
     choice = choice.model_copy(update={"supervisor_note": _build_supervisor_note(choice)})

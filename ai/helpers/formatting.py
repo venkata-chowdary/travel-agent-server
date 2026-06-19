@@ -91,14 +91,14 @@ def format_hotel_block(option: HotelOption | None) -> str:
     return "\n".join(lines)
 
 
-def format_transport_block(options: list[TransportOption] | None) -> str:
+def format_transport_block(options: list[TransportOption] | None, num_travelers: int = 1) -> str:
     if not options:
         return ""
 
     lines = ["\n\n[SELECTED TRANSPORT - chosen by the user. Treat as authoritative:]"]
-    total = 0
+    per_person_total = 0
     for option in options:
-        total += option.price
+        per_person_total += option.price
         details = []
         if option.details.get("flight_number"):
             details.append(f"flight {option.details['flight_number']}")
@@ -112,7 +112,14 @@ def format_transport_block(options: list[TransportOption] | None) -> str:
         lines.append(
             f"  {option.leg}: {option.mode} via {option.provider}{detail_text}, "
             f"{option.from_}->{option.to}, {option.depart}-{option.arrive}, "
-            f"{option.duration}, INR {option.price}"
+            f"{option.duration}, INR {option.price} per person"
         )
-    lines.append(f"  Total selected transport cost: INR {total}")
+    if num_travelers > 1:
+        lines.append(f"  Travelers: {num_travelers}")
+        lines.append(f"  Per-person transport total: INR {per_person_total}")
+        lines.append(f"  Total transport cost ({num_travelers} travelers): INR {per_person_total * num_travelers}")
+        lines.append(f"  Set budget.flights to exactly INR {per_person_total * num_travelers}")
+    else:
+        lines.append(f"  Total selected transport cost: INR {per_person_total}")
+        lines.append(f"  Set budget.flights to exactly INR {per_person_total}")
     return "\n".join(lines)

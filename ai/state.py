@@ -75,6 +75,14 @@ class SupervisorDecision(BaseModel):
             "'from the 15th' → nearest future 15th of any month. Null if no start date is mentioned."
         ),
     )
+    num_travelers: int | None = Field(
+        default=None,
+        description=(
+            "Number of people traveling (including the user). "
+            "'solo' or 'just me' → 1, 'couple' or 'we two' → 2, 'family of 4' → 4. "
+            "Prefer the most recent explicit value. Null if never mentioned."
+        ),
+    )
     companion_note: str | None = Field(
         default=None,
         description=(
@@ -95,6 +103,7 @@ class TravelState(TypedDict):
     destination: str | None
     trip_duration_days: int | None
     trip_start_date: str | None
+    num_travelers: int | None
     clarification_checked: bool
     clarification_response: TravelAgentChatResponse | None
     preference_context: PreferenceContext | None
@@ -162,6 +171,7 @@ def build_state_summary(state: TravelState) -> list[BaseMessage]:
     lines.append(f"  destination:        {destination or 'UNKNOWN'}")
     lines.append(f"  trip_duration_days: {state.get('trip_duration_days') or 'UNKNOWN'}")
     lines.append(f"  trip_start_date:    {state.get('trip_start_date') or 'UNKNOWN'}")
+    lines.append(f"  num_travelers:      {state.get('num_travelers') or 'UNKNOWN (default 1)'}")
 
     # ── User profile (preference agent findings) ──────────────────────────────
     prefs = state.get("preference_context")

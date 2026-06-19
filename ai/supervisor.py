@@ -67,12 +67,13 @@ async def _ask_supervisor(
 def _apply_decision_trip_fields(
     state: TravelState,
     decision: SupervisorDecision,
-) -> tuple[str | None, str | None, int | None, str | None]:
+) -> tuple[str | None, str | None, int | None, str | None, int | None]:
     return (
         decision.origin or state.get("origin") or get_origin(state),
         decision.destination or state.get("destination"),
         decision.trip_duration_days or state.get("trip_duration_days"),
         decision.trip_start_date or state.get("trip_start_date"),
+        decision.num_travelers or state.get("num_travelers"),
     )
 
 
@@ -205,16 +206,18 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
     previous_destination = state.get("destination")
     previous_days = state.get("trip_duration_days")
     previous_start_date = state.get("trip_start_date")
+    previous_num_travelers = state.get("num_travelers") or 1
 
-    origin, destination, trip_duration_days, trip_start_date = _apply_decision_trip_fields(state, decision)
+    origin, destination, trip_duration_days, trip_start_date, num_travelers = _apply_decision_trip_fields(state, decision)
 
     origin_changed = bool(decision.origin and previous_origin and decision.origin.lower() != previous_origin.lower())
     destination_changed = bool(decision.destination and previous_destination and decision.destination.lower() != previous_destination.lower())
     days_changed = bool(decision.trip_duration_days and previous_days and decision.trip_duration_days != previous_days)
     start_date_changed = bool(decision.trip_start_date and previous_start_date and decision.trip_start_date != previous_start_date)
+    travelers_changed = bool(decision.num_travelers and decision.num_travelers != previous_num_travelers)
 
     weather_invalidated = destination_changed or days_changed or start_date_changed
-    transport_invalidated = origin_changed or destination_changed or days_changed or start_date_changed
+    transport_invalidated = origin_changed or destination_changed or days_changed or start_date_changed or travelers_changed
 
     statuses = _statuses_after_intent(state, decision, weather_invalidated, transport_invalidated)
 
@@ -239,6 +242,7 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
             "destination": destination,
             "trip_duration_days": trip_duration_days,
             "trip_start_date": trip_start_date,
+            "num_travelers": num_travelers,
             "workflow_statuses": statuses,
             "weather_replan_prompted": True,
         })
@@ -257,6 +261,7 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
                 "destination": destination,
                 "trip_duration_days": trip_duration_days,
                 "trip_start_date": trip_start_date,
+                "num_travelers": num_travelers,
                 "workflow_statuses": {**statuses, "transport": "not_started"},
             })
 
@@ -271,6 +276,7 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
                 "destination": destination,
                 "trip_duration_days": trip_duration_days,
                 "trip_start_date": trip_start_date,
+                "num_travelers": num_travelers,
                 "workflow_statuses": {**statuses, "hotel": "not_started"},
             })
 
@@ -284,15 +290,16 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
                 "clarification_response": _incompatible_decision_response(str(exc)),
             })
 
-        origin, destination, trip_duration_days, trip_start_date = _apply_decision_trip_fields(state, decision)
+        origin, destination, trip_duration_days, trip_start_date, num_travelers = _apply_decision_trip_fields(state, decision)
 
         origin_changed = bool(decision.origin and previous_origin and decision.origin.lower() != previous_origin.lower())
         destination_changed = bool(decision.destination and previous_destination and decision.destination.lower() != previous_destination.lower())
         days_changed = bool(decision.trip_duration_days and previous_days and decision.trip_duration_days != previous_days)
         start_date_changed = bool(decision.trip_start_date and previous_start_date and decision.trip_start_date != previous_start_date)
+        travelers_changed = bool(decision.num_travelers and decision.num_travelers != previous_num_travelers)
 
         weather_invalidated = destination_changed or days_changed or start_date_changed
-        transport_invalidated = origin_changed or destination_changed or days_changed or start_date_changed
+        transport_invalidated = origin_changed or destination_changed or days_changed or start_date_changed or travelers_changed
 
         statuses = _statuses_after_intent(state, decision, weather_invalidated, transport_invalidated)
         validation_issue = _validate_supervisor_decision(decision, origin, destination, trip_duration_days, statuses)
@@ -308,6 +315,7 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
         "destination": destination,
         "trip_duration_days": trip_duration_days,
         "trip_start_date": trip_start_date,
+        "num_travelers": num_travelers,
         "workflow_statuses": statuses,
     }
     if weather_invalidated:

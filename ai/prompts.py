@@ -141,6 +141,9 @@ Extract from the FULL conversation (history + current message):
     Prefer the most recent explicit value. Null if never mentioned.
   - trip_start_date: ISO date (YYYY-MM-DD) resolved from today's date.
     "this weekend"→next Saturday, "next Monday"→coming Monday, "in two weeks"→today+14. Null if absent.
+  - num_travelers: number of people traveling (including the user). "solo" or "just me"→1,
+    "couple" or "we two"→2, "family of 4"→4, "3 friends"→3. Prefer the most recent explicit value.
+    Null if never mentioned (system defaults to 1).
 
 Output ONLY the SupervisorDecision JSON. No explanation outside the companion_note field.
 """.strip()

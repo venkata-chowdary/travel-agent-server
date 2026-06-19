@@ -8,7 +8,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ai.agent import run_travel_agent
-from ai.schemas import TravelAgentChatResponse, TransportSelection
+from ai.schemas import HotelSelection, TravelAgentChatResponse, TransportSelection
 from auth.models import User
 from chat.service import load_chat_history, save_chat_turn
 from trips.service import (
@@ -52,6 +52,11 @@ def _ai_message_content(row: Any) -> str:
         dest = tc.get("destination", "")
         route = f"{origin} → {dest}" if origin and dest else origin or dest or "unknown route"
         return f"{row.content} Transport options were presented for {route}. User has not yet selected."
+    if payload.get("response_type") == "hotel_choice":
+        hc = payload.get("hotel_choice") or {}
+        dest = hc.get("destination", "unknown destination")
+        nights = hc.get("nights", "?")
+        return f"{row.content} Hotel options were presented for {dest} ({nights} nights). User has not yet selected."
     return row.content
 
 
@@ -84,6 +89,7 @@ class AgentService:
         message: str,
         session_id: str,
         transport_selection: TransportSelection | None,
+        hotel_selection: HotelSelection | None,
         target_trip_id: UUID | None,
     ) -> TravelAgentChatResponse:
         lc_history = await self._build_lc_history(session_id)
@@ -103,11 +109,13 @@ class AgentService:
             self._user.id, message, session_id,
             history=lc_history,
             transport_selection=transport_selection,
+            hotel_selection=hotel_selection,
         )
 
         user_payload = {k: v for k, v in {
             "target_trip_id": str(target_trip_id) if target_trip_id else None,
             "transport_selection": _dump(transport_selection) if transport_selection else None,
+            "hotel_selection": _dump(hotel_selection) if hotel_selection else None,
         }.items() if v is not None}
 
         async with self._session.begin():
@@ -143,6 +151,15 @@ class AgentService:
                             f"depart {opt.get('depart','')} arrive {opt.get('arrive','')} "
                             f"₹{opt.get('price','')}"
                         )
+                    messages.append(SystemMessage(content="\n".join(lines)))
+                hs = (r.payload or {}).get("hotel_selection")
+                if hs:
+                    opt = hs.get("selected_option") or {}
+                    lines = [
+                        f"User selected hotel: {opt.get('name','')} ({opt.get('hotel_type','')}), "
+                        f"{opt.get('area') or hs.get('destination','')}",
+                        f"  ₹{opt.get('price_per_night','')}/night, Total: ₹{opt.get('total_price','')}",
+                    ]
                     messages.append(SystemMessage(content="\n".join(lines)))
                 messages.append(HumanMessage(content=r.content))
             else:

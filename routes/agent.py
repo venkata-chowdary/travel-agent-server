@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ai.chat_service import AgentService
-from ai.schemas import TravelAgentChatResponse, TransportSelection
+from ai.schemas import HotelSelection, TravelAgentChatResponse, TransportSelection
 from auth.dependencies import get_current_user
 from auth.models import User
 from db import get_db_session
@@ -24,6 +24,7 @@ class ChatRequest(BaseModel):
     message: str
     session_id: str
     transport_selection: TransportSelection | None = None
+    hotel_selection: HotelSelection | None = None
     target_trip_id: UUID | None = None
 
 
@@ -65,6 +66,7 @@ async def chat(
         message=body.message,
         session_id=body.session_id,
         transport_selection=body.transport_selection,
+        hotel_selection=body.hotel_selection,
         target_trip_id=body.target_trip_id,
     )
     logger.info("Chat response ready [session=%s]", body.session_id[:8])

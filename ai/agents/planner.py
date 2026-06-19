@@ -7,7 +7,7 @@ from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
-from ai.helpers import get_llm, format_preferences_block, format_transport_block, format_weather_block
+from ai.helpers import get_llm, format_hotel_block, format_preferences_block, format_transport_block, format_weather_block
 from ai.prompts import MAIN_TRAVEL_AGENT_SYSTEM_PROMPT
 from ai.schemas import TravelAgentStructuredResponse
 from ai.schemas.travel import TravelPlanLLMOutput
@@ -27,6 +27,7 @@ async def planner_node(state: TravelState) -> dict:
         + format_preferences_block(state.get("preference_context"))
         + format_weather_block(state.get("weather_forecast"))
         + format_transport_block(state.get("selected_transport_options"))
+        + format_hotel_block(state.get("selected_hotel_option"))
     )
     messages = [SystemMessage(content=system_prompt)]
     if state.get("messages"):
@@ -82,6 +83,16 @@ async def planner_node(state: TravelState) -> dict:
                  "price": opt.price, "stops": 0}
                 for opt in selected_options if opt.mode == "flight"
             ],
+        })
+
+    selected_hotel = state.get("selected_hotel_option")
+    if selected_hotel:
+        result = result.model_copy(update={
+            "budget": result.budget.model_copy(update={
+                "stay": selected_hotel.total_price,
+                "total": result.budget.flights + selected_hotel.total_price + result.budget.activities + result.budget.food,
+            }),
+            "hotel_options": [selected_hotel],
         })
 
     logger.info("Planner done — %s, %s day(s), budget %s", result.destination, result.days, result.budget.total)

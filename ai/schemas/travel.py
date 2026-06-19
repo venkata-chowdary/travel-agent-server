@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from ai.schemas.hotel import HotelChoiceResponse, HotelOption
 from ai.schemas.transport import TransportChoiceResponse, TransportOption
 from ai.schemas.weather import DailyForecast, TripRisk
 
@@ -67,7 +68,7 @@ class TravelAgentStructuredResponse(BaseModel):
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
-    hotel_options: list = Field(default_factory=list)
+    hotel_options: list[HotelOption] = Field(default_factory=list)
     flight_options: list = Field(default_factory=list)
     transport_options: list[TransportOption] = Field(default_factory=list)
 
@@ -79,8 +80,9 @@ class TravelAgentStructuredResponse(BaseModel):
 
 
 class TravelAgentChatResponse(BaseModel):
-    response_type: Literal["clarification", "transport_choice", "trip_plan"]
+    response_type: Literal["clarification", "transport_choice", "hotel_choice", "trip_plan"]
     assistant_message: str
     questions: list[str] = Field(default_factory=list)
     transport_choice: TransportChoiceResponse | None = None
+    hotel_choice: HotelChoiceResponse | None = None
     trip_plan: TravelAgentStructuredResponse | None = None

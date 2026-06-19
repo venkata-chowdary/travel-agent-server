@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ai.schemas import PreferenceContext, TravelPreferences
+from ai.schemas.hotel import HotelOption
 from ai.schemas.transport import TransportOption
 from ai.schemas.weather import WeatherForecastResponse
 
@@ -70,6 +71,23 @@ def format_weather_block(forecast: WeatherForecastResponse | None) -> str:
             lines.append(
                 f"    Day {risk.day} [{risk.severity}] {risk.risk_type}: {risk.recommendation}"
             )
+    return "\n".join(lines)
+
+
+def format_hotel_block(option: HotelOption | None) -> str:
+    if not option:
+        return ""
+    lines = ["\n\n[SELECTED HOTEL - chosen by the user. Treat as authoritative:]"]
+    lines.append(f"  {option.name} ({option.hotel_type}){', ' + option.area if option.area else ''}")
+    lines.append(
+        f"  Rating: {option.rating}/5, INR {option.price_per_night:,}/night, "
+        f"Total: INR {option.total_price:,} ({option.total_price // option.price_per_night if option.price_per_night else '?'} nights)"
+    )
+    if option.breakfast_included:
+        lines.append("  Breakfast included")
+    if option.refundable:
+        lines.append("  Refundable")
+    lines.append(f"  Set budget.stay to exactly INR {option.total_price}")
     return "\n".join(lines)
 
 

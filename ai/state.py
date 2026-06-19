@@ -7,6 +7,8 @@ from langchain_core.messages import BaseMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from ai.schemas import (
+    HotelChoiceResponse,
+    HotelOption,
     PreferenceContext,
     TravelAgentChatResponse,
     TravelAgentStructuredResponse,
@@ -17,8 +19,8 @@ from ai.schemas import (
 
 # ── Workflow types & constants ────────────────────────────────────────────────
 
-WorkflowStep = Literal["preferences", "clarification", "weather", "transport"]
-WorkflowTarget = Literal["preferences", "clarification", "weather", "transport", "planner", "none"]
+WorkflowStep = Literal["preferences", "clarification", "weather", "transport", "hotel"]
+WorkflowTarget = Literal["preferences", "clarification", "weather", "transport", "hotel", "planner", "none"]
 WorkflowStatus = Literal["not_started", "waiting_for_user", "succeeded", "empty", "failed", "skipped_by_user"]
 SupervisorIntent = Literal[
     "start_or_continue",
@@ -29,7 +31,7 @@ SupervisorIntent = Literal[
     "ask_clarification",
 ]
 
-WORKFLOW_STEPS: tuple[WorkflowStep, ...] = ("preferences", "clarification", "weather", "transport")
+WORKFLOW_STEPS: tuple[WorkflowStep, ...] = ("preferences", "clarification", "weather", "transport", "hotel")
 RESOLVED_WORKFLOW_STATUSES: set[str] = {"succeeded", "empty", "failed", "skipped_by_user"}
 
 
@@ -42,7 +44,7 @@ class ClarificationDecision(BaseModel):
 
 
 class SupervisorDecision(BaseModel):
-    next: Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "planner"] = Field(
+    next: Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "hotel_agent", "planner"] = Field(
         description="Which agent to invoke next."
     )
     intent: SupervisorIntent = Field(
@@ -99,6 +101,8 @@ class TravelState(TypedDict):
     weather_forecast: WeatherForecastResponse | None
     transport_choice: TransportChoiceResponse | None
     selected_transport_options: list[TransportOption] | None
+    hotel_choice: HotelChoiceResponse | None
+    selected_hotel_option: HotelOption | None
     structured_response: TravelAgentStructuredResponse | None
     workflow_statuses: dict[str, WorkflowStatus]
 
@@ -107,6 +111,10 @@ class TravelState(TypedDict):
 
 def has_transport_options(choice: TransportChoiceResponse | None) -> bool:
     return bool(choice and (choice.outbound_options or choice.return_options))
+
+
+def has_hotel_options(choice: HotelChoiceResponse | None) -> bool:
+    return bool(choice and choice.options)
 
 
 def get_origin(state: TravelState) -> str | None:
@@ -208,6 +216,22 @@ def build_state_summary(state: TravelState) -> list[BaseMessage]:
         lines.append(f"\nTransport: NOT YET SEARCHED ({origin} → {destination})")
     else:
         lines.append("\nTransport: N/A (origin or destination unknown)")
+
+    # ── Hotel ─────────────────────────────────────────────────────────────────
+    if state.get("selected_hotel_option"):
+        h = state["selected_hotel_option"]
+        lines.append(f"\nHotel: SELECTED BY USER — {h.name} ({h.hotel_type}), INR {h.total_price} total")
+    elif has_hotel_options(state.get("hotel_choice")):
+        choice = state["hotel_choice"]
+        lines.append(f"\nHotel: SEARCHED — {len(choice.options)} option(s) found (awaiting user selection)")
+        if choice.supervisor_note:
+            lines.append(f"  → {choice.supervisor_note}")
+    elif state.get("hotel_choice"):
+        lines.append("\nHotel: SEARCHED — no options found")
+    elif destination:
+        lines.append(f"\nHotel: NOT YET SEARCHED (destination: {destination})")
+    else:
+        lines.append("\nHotel: N/A (no destination yet)")
 
     # ── Workflow ledger ───────────────────────────────────────────────────────
     lines.append("\nWorkflow ledger:")

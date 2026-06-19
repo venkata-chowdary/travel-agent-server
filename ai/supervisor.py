@@ -22,6 +22,7 @@ from ai.state import (
     build_state_summary,
     get_origin,
     get_workflow_statuses,
+    has_hotel_options,
     has_transport_options,
     set_status,
 )
@@ -80,6 +81,7 @@ _STEP_TO_AGENT: dict[str, str] = {
     "clarification": "clarifier",
     "weather": "weather_agent",
     "transport": "transport_agent",
+    "hotel": "hotel_agent",
 }
 
 
@@ -94,10 +96,14 @@ def _statuses_after_intent(
     if state.get("selected_transport_options") and statuses.get("transport") in ("waiting_for_user", "not_started"):
         statuses["transport"] = "succeeded"
 
+    if state.get("selected_hotel_option") and statuses.get("hotel") in ("waiting_for_user", "not_started"):
+        statuses["hotel"] = "succeeded"
+
     if weather_invalidated:
         statuses["weather"] = "not_started"
     if transport_invalidated:
         statuses["transport"] = "not_started"
+        statuses["hotel"] = "not_started"
 
     if decision.target_step in WORKFLOW_STEPS:
         target = cast(WorkflowStep, decision.target_step)
@@ -134,6 +140,12 @@ def _validate_supervisor_decision(
         if trip_duration_days is None:
             return "transport_agent requires a known trip duration."
 
+    if decision.next == "hotel_agent":
+        if not destination:
+            return "hotel_agent requires a known destination."
+        if trip_duration_days is None:
+            return "hotel_agent requires a known trip duration."
+
     if decision.next == "planner":
         if not origin or not destination or trip_duration_days is None:
             return "planner requires origin, destination, and trip duration."
@@ -160,7 +172,7 @@ def _incompatible_decision_response(issue: str) -> TravelAgentChatResponse:
     )
 
 
-_SupervisorDest = Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "planner"]
+_SupervisorDest = Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "hotel_agent", "planner"]
 
 
 # ── Node ──────────────────────────────────────────────────────────────────────
@@ -222,6 +234,20 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
                 "workflow_statuses": {**statuses, "transport": "not_started"},
             })
 
+        if (
+            statuses.get("hotel") == "waiting_for_user"
+            and has_hotel_options(state.get("hotel_choice"))
+            and not state.get("selected_hotel_option")
+        ):
+            logger.info("Supervisor: hotel options pending user selection — re-routing to hotel_agent")
+            return Command(goto="hotel_agent", update={
+                "origin": origin,
+                "destination": destination,
+                "trip_duration_days": trip_duration_days,
+                "trip_start_date": trip_start_date,
+                "workflow_statuses": {**statuses, "hotel": "not_started"},
+            })
+
         logger.info("Supervisor decision incompatible; re-asking LLM: %s", validation_issue)
         try:
             decision = await _ask_supervisor(state, today, validation_issue=validation_issue)
@@ -263,6 +289,8 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
     if transport_invalidated:
         updates["transport_choice"] = None
         updates["selected_transport_options"] = None
+        updates["hotel_choice"] = None
+        updates["selected_hotel_option"] = None
     if decision.intent == "retry_step":
         if decision.target_step == "preferences":
             updates["preference_context"] = None
@@ -271,9 +299,17 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
         elif decision.target_step == "transport":
             updates["transport_choice"] = None
             updates["selected_transport_options"] = None
+        elif decision.target_step == "hotel":
+            updates["hotel_choice"] = None
+            updates["selected_hotel_option"] = None
     if decision.intent == "proceed_without_step" and decision.target_step == "transport":
         updates["transport_choice"] = None
         updates["selected_transport_options"] = None
+    if decision.intent == "proceed_without_step" and decision.target_step == "hotel":
+        updates["hotel_choice"] = None
+        updates["selected_hotel_option"] = None
     if decision.next == "planner" and not state.get("selected_transport_options"):
         updates["transport_choice"] = None
+    if decision.next == "planner" and not state.get("selected_hotel_option"):
+        updates["hotel_choice"] = None
     return Command(goto=decision.next, update=updates)

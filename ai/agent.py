@@ -12,12 +12,13 @@ from langgraph.graph import END, START, StateGraph
 
 from ai.agents import (
     clarifier_node,
+    hotel_agent_node,
     planner_node,
     preference_agent_node,
     transport_agent_node,
     weather_agent_node,
 )
-from ai.schemas import TravelAgentChatResponse, TransportSelection
+from ai.schemas import HotelSelection, TravelAgentChatResponse, TransportSelection
 from ai.state import TravelState
 from ai.supervisor import supervisor_node
 from config import settings
@@ -37,6 +38,7 @@ graph.add_node("preference_agent", preference_agent_node)
 graph.add_node("clarifier", clarifier_node)
 graph.add_node("weather_agent", weather_agent_node)
 graph.add_node("transport_agent", transport_agent_node)
+graph.add_node("hotel_agent", hotel_agent_node)
 graph.add_node("planner", planner_node)
 
 graph.add_edge(START, "supervisor")
@@ -47,6 +49,7 @@ graph.add_conditional_edges("clarifier", lambda s: END if s.get("clarification_r
 graph.add_edge("preference_agent", "supervisor")
 graph.add_edge("weather_agent", "supervisor")
 graph.add_edge("transport_agent", END)
+graph.add_edge("hotel_agent", END)
 graph.add_edge("planner", END)
 
 _checkpoint_pool: Any | None = None
@@ -88,6 +91,9 @@ async def init_agent_checkpointing() -> None:
         ) from exc
 
     _checkpoint_modules = [
+        ("ai.schemas.hotel", "HotelChoiceResponse"),
+        ("ai.schemas.hotel", "HotelOption"),
+        ("ai.schemas.hotel", "HotelSelection"),
         ("ai.schemas.preferences", "PreferenceContext"),
         ("ai.schemas.transport", "TransportChoiceResponse"),
         ("ai.schemas.transport", "TransportOption"),
@@ -136,6 +142,7 @@ async def run_travel_agent(
     session_id: str,
     history: list[BaseMessage] | None = None,
     transport_selection: TransportSelection | None = None,
+    hotel_selection: HotelSelection | None = None,
 ) -> TravelAgentChatResponse:
     selected_options = transport_selection.selected_options if transport_selection else None
     config: dict[str, Any] = {"configurable": {"thread_id": session_id}}
@@ -156,6 +163,12 @@ async def run_travel_agent(
             "trip_start_date": transport_selection.start_date,
             "transport_choice": None,
             "selected_transport_options": selected_options,
+        })
+    if hotel_selection:
+        input_state.update({
+            "destination": hotel_selection.destination,
+            "hotel_choice": None,
+            "selected_hotel_option": hotel_selection.selected_option,
         })
 
     try:
@@ -187,6 +200,14 @@ async def run_travel_agent(
             transport_choice=transport_choice,
         )
 
+    hotel_choice = result.get("hotel_choice")
+    if hotel_choice and hotel_choice.options:
+        return TravelAgentChatResponse(
+            response_type="hotel_choice",
+            assistant_message=hotel_choice.summary,
+            hotel_choice=hotel_choice,
+        )
+
     trip_plan = result.get("structured_response")
     if trip_plan is not None:
         return TravelAgentChatResponse(
@@ -195,12 +216,18 @@ async def run_travel_agent(
             trip_plan=trip_plan,
         )
 
-    # Transport search ran but found no options — tell the user rather than 500-ing.
+    # Transport or hotel search ran but found no options — tell the user rather than 500-ing.
     if transport_choice:
         return TravelAgentChatResponse(
             response_type="clarification",
             assistant_message=transport_choice.summary,
             questions=[],
         )
+    if hotel_choice:
+        return TravelAgentChatResponse(
+            response_type="clarification",
+            assistant_message=hotel_choice.summary,
+            questions=[],
+        )
 
-    raise RuntimeError("Agent completed without producing a plan, clarification, or transport choice.")
+    raise RuntimeError("Agent completed without producing a plan, clarification, or transport/hotel choice.")

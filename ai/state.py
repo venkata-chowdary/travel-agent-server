@@ -105,22 +105,6 @@ class TravelState(TypedDict):
 
 # ── Helpers that read or derive values from TravelState ───────────────────────
 
-def has_preference_data(ctx: PreferenceContext | None) -> bool:
-    return bool(
-        ctx
-        and (
-            ctx.travel_style
-            or ctx.budget_style
-            or ctx.preferred_transport
-            or ctx.food_preference
-            or ctx.hotel_preference
-            or ctx.avoid
-            or ctx.origin
-            or ctx.memory_confidence > 0
-        )
-    )
-
-
 def has_transport_options(choice: TransportChoiceResponse | None) -> bool:
     return bool(choice and (choice.outbound_options or choice.return_options))
 
@@ -233,37 +217,3 @@ def build_state_summary(state: TravelState) -> list[BaseMessage]:
     return [SystemMessage(content="Current state:\n" + "\n".join(lines))]
 
 
-def apply_transport_budget(
-    result: TravelAgentStructuredResponse,
-    selected_options: list[TransportOption] | None,
-) -> TravelAgentStructuredResponse:
-    if not selected_options:
-        return result
-    transport_total = sum(option.price for option in selected_options)
-    budget = result.budget.model_copy(update={
-        "flights": transport_total,
-        "total": transport_total + result.budget.stay + result.budget.activities + result.budget.food,
-    })
-    return result.model_copy(update={
-        "budget": budget,
-        "transport_options": selected_options,
-        "flight_options": [
-            _transport_option_to_flight_option(option)
-            for option in selected_options
-            if option.mode == "flight"
-        ],
-    })
-
-
-def _transport_option_to_flight_option(option: TransportOption) -> dict:
-    return {
-        "id": option.id,
-        "airline": option.provider,
-        "from": option.from_,
-        "to": option.to,
-        "depart": option.depart,
-        "arrive": option.arrive,
-        "duration": option.duration,
-        "price": option.price,
-        "stops": 0,
-    }

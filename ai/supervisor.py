@@ -33,20 +33,17 @@ _llm = get_llm(model=settings.llm_model, temperature=settings.llm_temperature)
 
 # ── Private helpers ───────────────────────────────────────────────────────────
 
-def _supervisor_messages(
-    state: TravelState,
-    today: str,
-    validation_issue: str | None = None,
-) -> list[BaseMessage]:
+async def _ask_supervisor(
+    state: TravelState, today: str, validation_issue: str | None = None
+) -> SupervisorDecision:
     needs_extraction = (
         not get_origin(state)
         or not state.get("destination")
         or state.get("trip_duration_days") is None
     )
-    history_messages = (state.get("messages") or []) if needs_extraction else []
     messages: list[BaseMessage] = [
         SystemMessage(content=f"{SUPERVISOR_PROMPT}\n\nToday is {today}."),
-        *history_messages,
+        *((state.get("messages") or []) if needs_extraction else []),
         HumanMessage(content=state["user_message"]),
         *build_state_summary(state),
     ]
@@ -56,19 +53,12 @@ def _supervisor_messages(
             f"Issue: {validation_issue}\n"
             "Return a corrected SupervisorDecision JSON. Do not explain."
         )))
-    return messages
-
-
-async def _ask_supervisor(
-    state: TravelState, today: str, validation_issue: str | None = None
-) -> SupervisorDecision:
-    # json_schema → Gemini controlled generation: token probabilities constrained
-    # to only valid Literal enum values. OutputParserException here means a genuine
-    # API failure (not a hallucination), so surface it as ValueError for retry.
+    # json_schema → Gemini controlled generation constrains token probabilities
+    # to valid Literal enum values. OutputParserException here is an API failure.
     try:
         return await _llm.with_structured_output(
             SupervisorDecision, method="json_schema"
-        ).ainvoke(_supervisor_messages(state, today, validation_issue))
+        ).ainvoke(messages)
     except OutputParserException as exc:
         raise ValueError(str(exc)) from exc
 
@@ -85,13 +75,12 @@ def _apply_decision_trip_fields(
     )
 
 
-def _agent_for_step(step: str) -> str | None:
-    return {
-        "preferences": "preference_agent",
-        "clarification": "clarifier",
-        "weather": "weather_agent",
-        "transport": "transport_agent",
-    }.get(step)
+_STEP_TO_AGENT: dict[str, str] = {
+    "preferences": "preference_agent",
+    "clarification": "clarifier",
+    "weather": "weather_agent",
+    "transport": "transport_agent",
+}
 
 
 def _statuses_after_intent(
@@ -127,7 +116,7 @@ def _validate_supervisor_decision(
     statuses: dict[str, WorkflowStatus],
 ) -> str | None:
     if decision.intent == "retry_step":
-        expected_agent = _agent_for_step(decision.target_step)
+        expected_agent = _STEP_TO_AGENT.get(decision.target_step)
         if expected_agent is None:
             return "retry_step intent must target one specialist workflow step."
         if decision.next != expected_agent:

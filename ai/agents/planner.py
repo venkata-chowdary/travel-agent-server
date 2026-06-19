@@ -11,7 +11,7 @@ from ai.helpers import get_llm, format_preferences_block, format_transport_block
 from ai.prompts import MAIN_TRAVEL_AGENT_SYSTEM_PROMPT
 from ai.schemas import TravelAgentStructuredResponse
 from ai.schemas.travel import TravelPlanLLMOutput
-from ai.state import TravelState, apply_transport_budget, get_origin, get_trip_dates
+from ai.state import TravelState, get_origin, get_trip_dates
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -67,6 +67,22 @@ async def planner_node(state: TravelState) -> dict:
     if updates:
         result = result.model_copy(update=updates)
 
-    result = apply_transport_budget(result, state.get("selected_transport_options"))
+    selected_options = state.get("selected_transport_options")
+    if selected_options:
+        transport_total = sum(opt.price for opt in selected_options)
+        result = result.model_copy(update={
+            "budget": result.budget.model_copy(update={
+                "flights": transport_total,
+                "total": transport_total + result.budget.stay + result.budget.activities + result.budget.food,
+            }),
+            "transport_options": selected_options,
+            "flight_options": [
+                {"id": opt.id, "airline": opt.provider, "from": opt.from_, "to": opt.to,
+                 "depart": opt.depart, "arrive": opt.arrive, "duration": opt.duration,
+                 "price": opt.price, "stops": 0}
+                for opt in selected_options if opt.mode == "flight"
+            ],
+        })
+
     logger.info("Planner done — %s, %s day(s), budget %s", result.destination, result.days, result.budget.total)
     return {"structured_response": result}

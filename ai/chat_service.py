@@ -60,11 +60,113 @@ def _ai_message_content(row: Any) -> str:
     return row.content
 
 
+def _as_list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _as_dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _format_selected_hotel(hotel_options: Any) -> str:
+    options = [_as_dict(option) for option in _as_list(hotel_options)]
+    selected = next((option for option in options if option), None)
+    if not selected:
+        return "Selected hotel: none saved"
+
+    name = selected.get("name") or "unknown hotel"
+    hotel_type = selected.get("hotel_type") or "unknown type"
+    area = selected.get("area") or "unknown area"
+    price_per_night = selected.get("price_per_night")
+    total_price = selected.get("total_price")
+    rating = selected.get("rating")
+    amenities = selected.get("amenities") if isinstance(selected.get("amenities"), list) else []
+
+    lines = [f"Selected hotel: {name} ({hotel_type}) in {area}"]
+    if rating is not None:
+        lines.append(f"Hotel rating: {rating}/5")
+    if price_per_night is not None or total_price is not None:
+        lines.append(f"Hotel cost: INR {price_per_night or 'unknown'}/night, total INR {total_price or 'unknown'}")
+    if selected.get("breakfast_included"):
+        lines.append("Hotel breakfast: included")
+    if selected.get("refundable"):
+        lines.append("Hotel booking: refundable")
+    if amenities:
+        lines.append(f"Hotel amenities: {', '.join(str(item) for item in amenities[:8])}")
+    return "\n".join(lines)
+
+
+def _format_weather_context(daily_forecast: Any, trip_risks: Any) -> str:
+    forecast_days = [_as_dict(day) for day in _as_list(daily_forecast)]
+    risks = [_as_dict(risk) for risk in _as_list(trip_risks)]
+    if not forecast_days and not risks:
+        return "Weather context: none saved"
+
+    lines = ["Weather context from saved trip:"]
+    for day in forecast_days:
+        date = day.get("date") or f"day {day.get('day', '?')}"
+        condition = day.get("condition") or "unknown"
+        temperature = day.get("temperature") or "unknown temp"
+        rain = day.get("rain_probability")
+        risk_level = day.get("risk_level") or "unknown"
+        rain_text = f", rain {rain}%" if rain is not None else ""
+        lines.append(f"  - {date}: {condition}, {temperature}{rain_text}, risk={risk_level}")
+
+    if risks:
+        lines.append("Saved weather risks:")
+        for risk in risks:
+            day = risk.get("day", "?")
+            severity = risk.get("severity") or "unknown"
+            risk_type = risk.get("risk_type") or "risk"
+            recommendation = risk.get("recommendation") or ""
+            lines.append(f"  - Day {day} [{severity}] {risk_type}: {recommendation}")
+    return "\n".join(lines)
+
+
+def _format_experience_context(itinerary: Any) -> str:
+    activity_lines: list[str] = []
+    meal_lines: list[str] = []
+
+    for day in _as_list(itinerary):
+        day_data = _as_dict(day)
+        day_label = f"Day {day_data.get('day', '?')}"
+        if day_data.get("date"):
+            day_label += f" ({day_data['date']})"
+        for item in _as_list(day_data.get("items")):
+            item_data = _as_dict(item)
+            item_type = item_data.get("type")
+            if item_type not in {"activity", "meal"}:
+                continue
+            time = item_data.get("time") or "time TBD"
+            title = item_data.get("title") or "Untitled"
+            description = item_data.get("description") or ""
+            line = f"  - {day_label}, {time}: {title}"
+            if description:
+                line += f" - {description}"
+            if item_type == "activity":
+                activity_lines.append(line)
+            else:
+                meal_lines.append(line)
+
+    if not activity_lines and not meal_lines:
+        return "Activity and restaurant context: none saved beyond the itinerary"
+
+    lines = ["Activity and restaurant context from saved itinerary:"]
+    if activity_lines:
+        lines.append("Activities:")
+        lines.extend(activity_lines)
+    if meal_lines:
+        lines.append("Meals/restaurants:")
+        lines.extend(meal_lines)
+    return "\n".join(lines)
+
+
 def _trip_context_message(trip: Any) -> BaseMessage:
     return SystemMessage(
         content=(
             "The user is editing an existing saved trip. Revise this trip rather than treating "
-            "the request as a brand-new plan.\n\n"
+            "the request as a brand-new plan. Preserve selected bookings, weather constraints, "
+            "and named activity/restaurant anchors unless the user explicitly asks to change them.\n\n"
             f"Trip ID: {trip.id}\n"
             f"Destination: {trip.destination}\n"
             f"Origin: {trip.origin or 'unknown'}\n"
@@ -74,7 +176,11 @@ def _trip_context_message(trip: Any) -> BaseMessage:
             f"Summary: {trip.summary}\n"
             f"Budget: {_dump(trip.budget)}\n"
             f"Itinerary: {_dump(trip.itinerary)}\n"
-            f"Selected transport: {_dump(trip.transport_options)}"
+            f"Selected transport: {_dump(trip.transport_options)}\n"
+            f"{_format_selected_hotel(trip.hotel_options)}\n"
+            f"{_format_weather_context(trip.daily_forecast, trip.trip_risks)}\n"
+            f"{_format_experience_context(trip.itinerary)}\n"
+            f"Verification tips: {_dump(trip.verification_tips)}"
         )
     )
 

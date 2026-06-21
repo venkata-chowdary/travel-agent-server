@@ -153,12 +153,16 @@ def _validate_supervisor_decision(
             return "hotel_agent requires a known destination."
         if trip_duration_days is None:
             return "hotel_agent requires a known trip duration."
+        if statuses.get("transport") not in RESOLVED_WORKFLOW_STATUSES:
+            return "hotel_agent requires transport workflow to be resolved."
 
     if decision.next == "experience_agent":
         if not destination:
             return "experience_agent requires a known destination."
         if trip_duration_days is None:
             return "experience_agent requires a known trip duration."
+        if statuses.get("transport") not in RESOLVED_WORKFLOW_STATUSES:
+            return "experience_agent requires transport workflow to be resolved."
         if statuses.get("hotel") not in RESOLVED_WORKFLOW_STATUSES:
             return "experience_agent requires hotel workflow to be resolved."
 

@@ -7,15 +7,37 @@ from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
-from ai.helpers import get_llm, format_hotel_block, format_preferences_block, format_transport_block, format_weather_block
+from ai.helpers import (
+    format_experience_block,
+    format_hotel_block,
+    format_preferences_block,
+    format_transport_block,
+    format_weather_block,
+    get_llm,
+)
 from ai.prompts import MAIN_TRAVEL_AGENT_SYSTEM_PROMPT
 from ai.schemas import TravelAgentStructuredResponse
+from ai.schemas.experience import ExperienceContext
 from ai.schemas.travel import TravelPlanLLMOutput
 from ai.state import TravelState, get_origin, get_trip_dates
 from config import settings
 
 logger = logging.getLogger(__name__)
 _llm = get_llm(model=settings.llm_model, temperature=settings.llm_temperature)
+
+
+def _experience_costs(context: ExperienceContext | None, num_travelers: int) -> tuple[int | None, int | None]:
+    if context is None:
+        return None, None
+    activities_total = (
+        sum(activity.price for activity in context.activities) * num_travelers
+        if context.activities else None
+    )
+    food_total = (
+        sum(restaurant.price_per_person for restaurant in context.restaurants) * num_travelers
+        if context.restaurants else None
+    )
+    return activities_total, food_total
 
 
 async def planner_node(state: TravelState) -> dict:
@@ -36,6 +58,7 @@ async def planner_node(state: TravelState) -> dict:
         + format_weather_block(state.get("weather_forecast"))
         + format_transport_block(state.get("selected_transport_options"), num_travelers)
         + format_hotel_block(state.get("selected_hotel_option"))
+        + format_experience_block(state.get("experience_context"), num_travelers)
     )
     messages = [SystemMessage(content=system_prompt)]
     if state.get("messages"):
@@ -104,4 +127,16 @@ async def planner_node(state: TravelState) -> dict:
         })
 
     logger.info("Planner done — %s, %s day(s), budget %s", result.destination, result.days, result.budget.total)
+    activities_total, food_total = _experience_costs(state.get("experience_context"), num_travelers)
+    if activities_total is not None or food_total is not None:
+        budget = result.budget.model_copy(update={
+            **({"activities": activities_total} if activities_total is not None else {}),
+            **({"food": food_total} if food_total is not None else {}),
+        })
+        result = result.model_copy(update={
+            "budget": budget.model_copy(update={
+                "total": budget.flights + budget.stay + budget.activities + budget.food,
+            }),
+        })
+
     return {"structured_response": result}

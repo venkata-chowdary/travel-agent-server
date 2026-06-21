@@ -83,6 +83,7 @@ _STEP_TO_AGENT: dict[str, str] = {
     "weather": "weather_agent",
     "transport": "transport_agent",
     "hotel": "hotel_agent",
+    "experience": "experience_agent",
 }
 
 
@@ -91,6 +92,7 @@ def _statuses_after_intent(
     decision: SupervisorDecision,
     weather_invalidated: bool,
     transport_invalidated: bool,
+    experience_invalidated: bool,
 ) -> dict[str, WorkflowStatus]:
     statuses = get_workflow_statuses(state)
 
@@ -105,11 +107,16 @@ def _statuses_after_intent(
     if transport_invalidated:
         statuses["transport"] = "not_started"
         statuses["hotel"] = "not_started"
+        statuses["experience"] = "not_started"
+    elif experience_invalidated:
+        statuses["experience"] = "not_started"
 
     if decision.target_step in WORKFLOW_STEPS:
         target = cast(WorkflowStep, decision.target_step)
         if decision.intent == "retry_step":
             statuses[target] = "not_started"
+            if target in {"preferences", "weather", "experience"}:
+                statuses["experience"] = "not_started"
         elif decision.intent == "proceed_without_step":
             statuses[target] = "skipped_by_user"
     return statuses
@@ -147,6 +154,14 @@ def _validate_supervisor_decision(
         if trip_duration_days is None:
             return "hotel_agent requires a known trip duration."
 
+    if decision.next == "experience_agent":
+        if not destination:
+            return "experience_agent requires a known destination."
+        if trip_duration_days is None:
+            return "experience_agent requires a known trip duration."
+        if statuses.get("hotel") not in RESOLVED_WORKFLOW_STATUSES:
+            return "experience_agent requires hotel workflow to be resolved."
+
     if decision.next == "planner":
         if not origin or not destination or trip_duration_days is None:
             return "planner requires origin, destination, and trip duration."
@@ -173,7 +188,7 @@ def _incompatible_decision_response(issue: str) -> TravelAgentChatResponse:
     )
 
 
-_SupervisorDest = Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "hotel_agent", "planner"]
+_SupervisorDest = Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "hotel_agent", "experience_agent", "planner"]
 
 
 # ── Node ──────────────────────────────────────────────────────────────────────
@@ -218,8 +233,9 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
 
     weather_invalidated = destination_changed or days_changed or start_date_changed
     transport_invalidated = origin_changed or destination_changed or days_changed or start_date_changed or travelers_changed
+    experience_invalidated = destination_changed or days_changed or start_date_changed or travelers_changed or weather_invalidated
 
-    statuses = _statuses_after_intent(state, decision, weather_invalidated, transport_invalidated)
+    statuses = _statuses_after_intent(state, decision, weather_invalidated, transport_invalidated, experience_invalidated)
 
     # Programmatic gate: weather flagged high-risk conditions and transport hasn't run yet.
     # Route to clarifier so the user can decide about their dates before transport search begins.
@@ -300,8 +316,9 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
 
         weather_invalidated = destination_changed or days_changed or start_date_changed
         transport_invalidated = origin_changed or destination_changed or days_changed or start_date_changed or travelers_changed
+        experience_invalidated = destination_changed or days_changed or start_date_changed or travelers_changed or weather_invalidated
 
-        statuses = _statuses_after_intent(state, decision, weather_invalidated, transport_invalidated)
+        statuses = _statuses_after_intent(state, decision, weather_invalidated, transport_invalidated, experience_invalidated)
         validation_issue = _validate_supervisor_decision(decision, origin, destination, trip_duration_days, statuses)
 
     if validation_issue:
@@ -326,23 +343,35 @@ async def supervisor_node(state: TravelState) -> Command[_SupervisorDest]:
         updates["selected_transport_options"] = None
         updates["hotel_choice"] = None
         updates["selected_hotel_option"] = None
+        updates["experience_context"] = None
+    elif experience_invalidated:
+        updates["experience_context"] = None
     if decision.intent == "retry_step":
         if decision.target_step == "preferences":
             updates["preference_context"] = None
+            updates["experience_context"] = None
         elif decision.target_step == "weather":
             updates["weather_forecast"] = None
+            updates["experience_context"] = None
         elif decision.target_step == "transport":
             updates["transport_choice"] = None
             updates["selected_transport_options"] = None
+            updates["experience_context"] = None
         elif decision.target_step == "hotel":
             updates["hotel_choice"] = None
             updates["selected_hotel_option"] = None
+            updates["experience_context"] = None
+        elif decision.target_step == "experience":
+            updates["experience_context"] = None
     if decision.intent == "proceed_without_step" and decision.target_step == "transport":
         updates["transport_choice"] = None
         updates["selected_transport_options"] = None
     if decision.intent == "proceed_without_step" and decision.target_step == "hotel":
         updates["hotel_choice"] = None
         updates["selected_hotel_option"] = None
+        updates["experience_context"] = None
+    if decision.intent == "proceed_without_step" and decision.target_step == "experience":
+        updates["experience_context"] = None
     if decision.next == "planner" and not state.get("selected_transport_options"):
         updates["transport_choice"] = None
     if decision.next == "planner" and not state.get("selected_hotel_option"):

@@ -12,6 +12,7 @@ from langgraph.graph import END, START, StateGraph
 
 from ai.agents import (
     clarifier_node,
+    experience_agent_node,
     hotel_agent_node,
     planner_node,
     preference_agent_node,
@@ -39,6 +40,7 @@ graph.add_node("clarifier", clarifier_node)
 graph.add_node("weather_agent", weather_agent_node)
 graph.add_node("transport_agent", transport_agent_node)
 graph.add_node("hotel_agent", hotel_agent_node)
+graph.add_node("experience_agent", experience_agent_node)
 graph.add_node("planner", planner_node)
 
 graph.add_edge(START, "supervisor")
@@ -50,6 +52,7 @@ graph.add_edge("preference_agent", "supervisor")
 graph.add_edge("weather_agent", "supervisor")
 graph.add_edge("transport_agent", END)
 graph.add_edge("hotel_agent", END)
+graph.add_edge("experience_agent", "supervisor")
 graph.add_edge("planner", END)
 
 _checkpoint_pool: Any | None = None
@@ -91,6 +94,9 @@ async def init_agent_checkpointing() -> None:
         ) from exc
 
     _checkpoint_modules = [
+        ("ai.schemas.experience", "ActivityOption"),
+        ("ai.schemas.experience", "ExperienceContext"),
+        ("ai.schemas.experience", "RestaurantOption"),
         ("ai.schemas.hotel", "HotelChoiceResponse"),
         ("ai.schemas.hotel", "HotelOption"),
         ("ai.schemas.hotel", "HotelSelection"),

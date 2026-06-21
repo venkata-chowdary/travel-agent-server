@@ -7,6 +7,7 @@ from langchain_core.messages import BaseMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from ai.schemas import (
+    ExperienceContext,
     HotelChoiceResponse,
     HotelOption,
     PreferenceContext,
@@ -19,8 +20,8 @@ from ai.schemas import (
 
 # ── Workflow types & constants ────────────────────────────────────────────────
 
-WorkflowStep = Literal["preferences", "clarification", "weather", "transport", "hotel"]
-WorkflowTarget = Literal["preferences", "clarification", "weather", "transport", "hotel", "planner", "none"]
+WorkflowStep = Literal["preferences", "clarification", "weather", "transport", "hotel", "experience"]
+WorkflowTarget = Literal["preferences", "clarification", "weather", "transport", "hotel", "experience", "planner", "none"]
 WorkflowStatus = Literal["not_started", "waiting_for_user", "succeeded", "empty", "failed", "skipped_by_user"]
 SupervisorIntent = Literal[
     "start_or_continue",
@@ -31,7 +32,7 @@ SupervisorIntent = Literal[
     "ask_clarification",
 ]
 
-WORKFLOW_STEPS: tuple[WorkflowStep, ...] = ("preferences", "clarification", "weather", "transport", "hotel")
+WORKFLOW_STEPS: tuple[WorkflowStep, ...] = ("preferences", "clarification", "weather", "transport", "hotel", "experience")
 RESOLVED_WORKFLOW_STATUSES: set[str] = {"succeeded", "empty", "failed", "skipped_by_user"}
 
 
@@ -44,7 +45,7 @@ class ClarificationDecision(BaseModel):
 
 
 class SupervisorDecision(BaseModel):
-    next: Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "hotel_agent", "planner"] = Field(
+    next: Literal["preference_agent", "clarifier", "weather_agent", "transport_agent", "hotel_agent", "experience_agent", "planner"] = Field(
         description="Which agent to invoke next."
     )
     intent: SupervisorIntent = Field(
@@ -113,6 +114,7 @@ class TravelState(TypedDict):
     selected_transport_options: list[TransportOption] | None
     hotel_choice: HotelChoiceResponse | None
     selected_hotel_option: HotelOption | None
+    experience_context: ExperienceContext | None
     structured_response: TravelAgentStructuredResponse | None
     workflow_statuses: dict[str, WorkflowStatus]
 
@@ -125,6 +127,10 @@ def has_transport_options(choice: TransportChoiceResponse | None) -> bool:
 
 def has_hotel_options(choice: HotelChoiceResponse | None) -> bool:
     return bool(choice and choice.options)
+
+
+def has_experience_context(context: ExperienceContext | None) -> bool:
+    return bool(context and (context.activities or context.restaurants))
 
 
 def get_origin(state: TravelState) -> str | None:
@@ -244,11 +250,27 @@ def build_state_summary(state: TravelState) -> list[BaseMessage]:
     else:
         lines.append("\nHotel: N/A (no destination yet)")
 
+    # â”€â”€ Experience â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    experience = state.get("experience_context")
+    if has_experience_context(experience):
+        lines.append(
+            f"\nExperience: SEARCHED - {len(experience.activities)} activity option(s), "
+            f"{len(experience.restaurants)} restaurant option(s)"
+        )
+        if experience.supervisor_note:
+            lines.append(f"  â†’ {experience.supervisor_note}")
+    elif experience:
+        lines.append("\nExperience: SEARCHED - no mock activities/restaurants found")
+        if experience.supervisor_note:
+            lines.append(f"  â†’ {experience.supervisor_note}")
+    elif destination:
+        lines.append(f"\nExperience: NOT YET SEARCHED (destination: {destination})")
+    else:
+        lines.append("\nExperience: N/A (no destination yet)")
+
     # ── Workflow ledger ───────────────────────────────────────────────────────
     lines.append("\nWorkflow ledger:")
     for step in WORKFLOW_STEPS:
         lines.append(f"  {step}: {statuses[step]}")
 
     return [SystemMessage(content="Current state:\n" + "\n".join(lines))]
-
-

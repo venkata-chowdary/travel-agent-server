@@ -1,4 +1,5 @@
 from .flight import FlightOption
+from .experience import ActivityOption, ExperienceContext, RestaurantOption
 from .hotel import HotelChoiceResponse, HotelOption, HotelSelection
 from .preferences import PastTrip, PreferenceContext, TravelPreferences, UserProfile
 from .transport import TransportChoiceResponse, TransportOption, TransportSelection
@@ -13,8 +14,10 @@ from .travel import (
 from .weather import DailyForecast, TripRisk, WeatherForecastResponse
 
 __all__ = [
+    "ActivityOption",
     "BudgetBreakdown",
     "DailyForecast",
+    "ExperienceContext",
     "FlightOption",
     "HotelChoiceResponse",
     "HotelOption",
@@ -29,6 +32,7 @@ __all__ = [
     "TransportSelection",
     "PastTrip",
     "PreferenceContext",
+    "RestaurantOption",
     "TravelPreferences",
     "UserProfile",
     "TripRisk",

@@ -11,9 +11,10 @@
 #
 #   Pure Python (no LLM)
 #     Use when the logic is fully deterministic given the graph state.
-#     Example: transport_agent (mock API search + ranking).
+#     Examples: transport_agent, hotel_agent, experience_agent (mock API search + ranking).
 
 from .clarifier import clarifier_node
+from .experience_agent import build_experience_context, experience_agent_node
 from .hotel_agent import build_hotel_choice, hotel_agent_node
 from .planner import planner_node
 from .preference_agent import preference_agent_node
@@ -22,8 +23,10 @@ from .weather_agent import weather_agent_node
 
 __all__ = [
     "build_hotel_choice",
+    "build_experience_context",
     "build_transport_choice",
     "clarifier_node",
+    "experience_agent_node",
     "hotel_agent_node",
     "planner_node",
     "preference_agent_node",

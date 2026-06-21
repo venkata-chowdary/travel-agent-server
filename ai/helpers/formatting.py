@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ai.schemas.experience import ExperienceContext
 from ai.schemas import PreferenceContext, TravelPreferences
 from ai.schemas.hotel import HotelOption
 from ai.schemas.transport import TransportOption
@@ -74,10 +75,43 @@ def format_weather_block(forecast: WeatherForecastResponse | None) -> str:
     return "\n".join(lines)
 
 
+def format_experience_block(context: ExperienceContext | None, num_travelers: int = 1) -> str:
+    if context is None or (not context.activities and not context.restaurants):
+        return ""
+
+    lines = ["\n\n[REQUIRED RECOMMENDED EXPERIENCE CONTEXT - from ExperienceAgent, authoritative. Use provided names/prices:]"]
+    lines.append(f"  Destination: {context.destination}")
+    if context.activities:
+        lines.append("  Recommended activities:")
+        for activity in context.activities:
+            weather_note = " weather-sensitive" if activity.weather_sensitive else ""
+            location = f", {activity.location}" if activity.location else ""
+            best_time = f", best time: {activity.best_time}" if activity.best_time else ""
+            lines.append(
+                f"    - {activity.name} ({activity.category}{location}): "
+                f"INR {activity.price} per person, {activity.duration_hours:g}h, "
+                f"rating {activity.rating}/5{best_time}{weather_note}"
+            )
+    if context.restaurants:
+        lines.append("  Recommended restaurants:")
+        for restaurant in context.restaurants:
+            area = f", {restaurant.area}" if restaurant.area else ""
+            meals = f", meals: {', '.join(restaurant.meal_types)}" if restaurant.meal_types else ""
+            veg = ", veg-friendly" if restaurant.veg_friendly else ""
+            lines.append(
+                f"    - {restaurant.name} ({restaurant.cuisine}{area}): "
+                f"INR {restaurant.price_per_person} per person, rating {restaurant.rating}/5"
+                f"{meals}{veg}"
+            )
+    lines.append(f"  Travelers: {num_travelers}")
+    lines.append("  The server will set budget.activities and budget.food from these recommended prices.")
+    return "\n".join(lines)
+
+
 def format_hotel_block(option: HotelOption | None) -> str:
     if not option:
         return ""
-    lines = ["\n\n[SELECTED HOTEL - chosen by the user. Treat as authoritative:]"]
+    lines = ["\n\n[REQUIRED SELECTED HOTEL - chosen by the user. Treat as authoritative:]"]
     lines.append(f"  {option.name} ({option.hotel_type}){', ' + option.area if option.area else ''}")
     lines.append(
         f"  Rating: {option.rating}/5, INR {option.price_per_night:,}/night, "
@@ -95,7 +129,7 @@ def format_transport_block(options: list[TransportOption] | None, num_travelers:
     if not options:
         return ""
 
-    lines = ["\n\n[SELECTED TRANSPORT - chosen by the user. Treat as authoritative:]"]
+    lines = ["\n\n[REQUIRED SELECTED TRANSPORT - chosen by the user. Treat as authoritative:]"]
     per_person_total = 0
     for option in options:
         per_person_total += option.price

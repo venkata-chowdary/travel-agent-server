@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import asyncio
 import json
-import time
 from statistics import mode
 from urllib.request import urlopen
 
@@ -20,21 +20,25 @@ class WeatherToolOutput(BaseModel):
     summary: str = Field(description="One-sentence plain-English summary suitable for travel advice.")
 
 
-def _http_get_json(url: str, retries: int = 3) -> dict:
+def _sync_http_get(url: str) -> dict:
+    with urlopen(url, timeout=10) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+async def _http_get_json(url: str, retries: int = 3) -> dict:
     last_exc: Exception | None = None
     for attempt in range(retries):
         try:
-            with urlopen(url, timeout=10) as response:
-                return json.loads(response.read().decode("utf-8"))
+            return await asyncio.to_thread(_sync_http_get, url)
         except Exception as exc:
             last_exc = exc
             if attempt < retries - 1:
-                time.sleep(2 ** attempt)  # 1s then 2s before retry
+                await asyncio.sleep(2 ** attempt)  # 1s then 2s before retry
     raise last_exc  # type: ignore[misc]
 
 
 @tool
-def get_current_weather(city: str) -> dict:
+async def get_current_weather(city: str) -> dict:
     """
     Fetch current weather for a travel destination using wttr.in.
 
@@ -55,7 +59,7 @@ def get_current_weather(city: str) -> dict:
     weather_url = f"https://wttr.in/{location}?format=j1"
 
     try:
-        weather_data = _http_get_json(weather_url)
+        weather_data = await _http_get_json(weather_url)
     except Exception:
         return WeatherToolOutput(
             city=city, country="", condition="Unavailable",
@@ -98,7 +102,7 @@ def get_current_weather(city: str) -> dict:
 
 
 @tool
-def get_weather_forecast(city: str, trip_dates: list[str]) -> dict:
+async def get_weather_forecast(city: str, trip_dates: list[str]) -> dict:
     """
     Fetch a multi-day weather forecast for a travel destination using wttr.in.
 
@@ -117,7 +121,7 @@ def get_weather_forecast(city: str, trip_dates: list[str]) -> dict:
     url = f"https://wttr.in/{location}?format=j1"
 
     try:
-        data = _http_get_json(url)
+        data = await _http_get_json(url)
     except Exception:
         return {
             "city": city,
@@ -133,7 +137,7 @@ def get_weather_forecast(city: str, trip_dates: list[str]) -> dict:
     # Retry once with "+India" appended â€” covers most Indian cities.
     if not weather_days:
         try:
-            fallback = _http_get_json(f"https://wttr.in/{location}+India?format=j1")
+            fallback = await _http_get_json(f"https://wttr.in/{location}+India?format=j1")
             weather_days = fallback.get("weather") or []
             if weather_days:
                 nearest_list = fallback.get("nearest_area") or nearest_list

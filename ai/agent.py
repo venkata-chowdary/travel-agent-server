@@ -26,11 +26,9 @@ from config import settings
 
 load_dotenv()
 sys.stdout.reconfigure(encoding="utf-8")
-
 logger = logging.getLogger(__name__)
 
 
-# ── Graph ─────────────────────────────────────────────────────────────────────
 
 graph = StateGraph(TravelState)
 

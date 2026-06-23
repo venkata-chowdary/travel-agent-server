@@ -15,7 +15,7 @@ class WeatherToolOutput(BaseModel):
     condition: str = Field(description="Human-readable weather condition, e.g. 'Partly Cloudy'.")
     temp_c: float = Field(description="Current temperature in Celsius.")
     feels_like_c: float = Field(description="Feels-like temperature in Celsius.")
-    humidity_pct: int = Field(description="Relative humidity as a percentage (0–100).")
+    humidity_pct: int = Field(description="Relative humidity as a percentage (0â€“100).")
     wind_kmph: int = Field(description="Wind speed in km/h.")
     summary: str = Field(description="One-sentence plain-English summary suitable for travel advice.")
 
@@ -38,11 +38,11 @@ def get_current_weather(city: str) -> dict:
     """
     Fetch current weather for a travel destination using wttr.in.
 
-    Pass the full, unambiguous city name as wttr.in uses it for geolocation —
-    do NOT append country codes (e.g. pass "Gokarna" not "Gokarna,IN").
+    Pass the full, unambiguous city name as wttr.in uses it for geolocation â€”
+    Do NOT append country codes (e.g. pass "Gokarna" not "Gokarna,IN").
     For internationally ambiguous names use the region or state to disambiguate
     (e.g. "Hospet Karnataka" or "Springfield Illinois").
-    Only call this once per planning response — pick the primary destination.
+    Only call this once per planning response â€” pick the primary destination.
 
     Args:
         city: Full city name, e.g. "Gokarna", "Hyderabad", "Hospet Karnataka".
@@ -85,7 +85,7 @@ def get_current_weather(city: str) -> dict:
 
     summary = (
         f"It is currently {condition.lower()} in {area}, {country} with a temperature of "
-        f"{temp_c}°C (feels like {feels_like_c}°C), "
+        f"{temp_c}Â°C (feels like {feels_like_c}Â°C), "
         f"{humidity_pct}% humidity, and winds at {wind_kmph} km/h."
     )
 
@@ -130,7 +130,7 @@ def get_weather_forecast(city: str, trip_dates: list[str]) -> dict:
     nearest_list = data.get("nearest_area") or []
 
     # wttr.in silently returns empty weather[] for unrecognised city names.
-    # Retry once with "+India" appended — covers most Indian cities.
+    # Retry once with "+India" appended â€” covers most Indian cities.
     if not weather_days:
         try:
             fallback = _http_get_json(f"https://wttr.in/{location}+India?format=j1")

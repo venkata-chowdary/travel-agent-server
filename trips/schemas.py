@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from ai.schemas.hotel import HotelOption
 from ai.schemas.travel import BudgetBreakdown, ItineraryDay
 from ai.schemas.transport import TransportOption
 from ai.schemas.weather import DailyForecast, TripRisk
@@ -57,6 +58,35 @@ class TripTransportOptionResponse(BaseModel):
     created_at: datetime
 
 
+class TripHotelOptionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    session_id: str
+    trip_id: UUID | None = None
+    option_id: str
+    destination: str
+    checkin: str
+    checkout: str
+    nights: int
+    travelers: int
+    name: str
+    provider: str
+    area: str | None = None
+    hotel_type: str
+    price_per_night: int
+    total_price: int
+    rating: float
+    amenities: list[str] = Field(default_factory=list)
+    distance_from_center_km: float | None = None
+    available_rooms: int
+    refundable: bool
+    breakfast_included: bool
+    status: str
+    is_recommended: bool
+    created_at: datetime
+
+
 class TripResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -73,7 +103,8 @@ class TripResponse(BaseModel):
     summary: str
     budget: BudgetBreakdown
     itinerary: list[ItineraryDay]
-    hotel_options: list = Field(default_factory=list)
+    hotel_options: list[HotelOption] = Field(default_factory=list)
+    hotel_status: str = "not_searched"
     flight_options: list = Field(default_factory=list)
     transport_options: list[TransportOption] = Field(default_factory=list)
     transport_status: str = "not_searched"

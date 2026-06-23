@@ -13,11 +13,14 @@ from auth.models import User
 from chat.service import load_chat_history, save_chat_turn
 from trips.service import (
     create_draft_trip,
+    create_draft_trip_from_hotel,
     create_trip,
     get_draft_trip_by_session,
     get_trip,
     get_trip_by_session,
+    link_hotel_options_to_trip,
     link_transport_options_to_trip,
+    save_hotel_options,
     save_transport_options,
     update_trip_from_plan,
 )
@@ -234,6 +237,8 @@ class AgentService:
             )
             if response.response_type == "transport_choice" and response.transport_choice is not None:
                 await self._save_transport(session_id, target_trip_id, response)
+            if response.response_type == "hotel_choice" and response.hotel_choice is not None:
+                await self._save_hotel(session_id, target_trip_id, response)
             if response.response_type == "trip_plan" and response.trip_plan is not None:
                 await self._save_trip_plan(session_id, target_trip_id, response)
 
@@ -294,6 +299,30 @@ class AgentService:
             self._session, session_id, trip_id, response.transport_choice, commit=False,
         )
 
+    async def _save_hotel(
+        self,
+        session_id: str,
+        target_trip_id: UUID | None,
+        response: TravelAgentChatResponse,
+    ) -> None:
+        if target_trip_id is not None:
+            trip_id = target_trip_id
+        else:
+            draft = await get_draft_trip_by_session(self._session, self._user.id, session_id)
+            if draft is None:
+                draft = await create_draft_trip_from_hotel(
+                    self._session, self._user.id, session_id, response.hotel_choice, commit=False,
+                )
+            if draft is None:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create draft trip",
+                )
+            trip_id = draft.id
+        await save_hotel_options(
+            self._session, session_id, trip_id, response.hotel_choice, commit=False,
+        )
+
     async def _find_trip_to_update(
         self,
         session_id: str,
@@ -339,5 +368,10 @@ class AgentService:
         await link_transport_options_to_trip(
             self._session, finalized.id, response.trip_plan.transport_options,
             was_skipped=transport_was_skipped, commit=False,
+        )
+        selected_hotel = response.trip_plan.hotel_options[0] if response.trip_plan.hotel_options else None
+        await link_hotel_options_to_trip(
+            self._session, finalized.id, selected_hotel,
+            was_skipped=selected_hotel is None, commit=False,
         )
         response.trip_plan = response.trip_plan.model_copy(update={"id": str(finalized.id)})

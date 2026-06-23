@@ -12,8 +12,8 @@ from auth.dependencies import get_current_user
 from auth.models import User
 from db import get_db_session
 from chat.service import load_chat_history
-from trips.schemas import TripTransportOptionResponse
-from trips.service import get_session_transport_options
+from trips.schemas import TripHotelOptionResponse, TripTransportOptionResponse
+from trips.service import get_session_hotel_options, get_session_transport_options
 
 
 logger = logging.getLogger(__name__)
@@ -85,3 +85,16 @@ async def pending_transport_options(
     generated but never completed (lost connection, logout, etc.).
     """
     return await get_session_transport_options(session, session_id, current_user.id)
+
+
+@router.get("/hotels/{session_id}", response_model=list[TripHotelOptionResponse])
+async def pending_hotel_options(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[TripHotelOptionResponse]:
+    """Return available hotel options for a session.
+
+    Frontend can use this to resume a hotel choice after refresh/logout.
+    """
+    return await get_session_hotel_options(session, session_id, current_user.id)

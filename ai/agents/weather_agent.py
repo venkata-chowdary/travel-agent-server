@@ -18,11 +18,11 @@ _llm = get_llm(model=settings.llm_model, temperature=settings.llm_temperature)
 async def weather_agent_node(state: TravelState) -> dict:
     destination = state.get("destination")
     if not destination:
-        logger.warning("WeatherAgent skipped — destination unknown")
+        logger.warning("WeatherAgent skipped â€” destination unknown")
         return {"workflow_statuses": set_status(state, "weather", "failed")}
 
     trip_dates = get_trip_dates(state)
-    logger.info("WeatherAgent running — %s, dates: %s", destination, trip_dates)
+    logger.info("WeatherAgent running â€” %s, dates: %s", destination, trip_dates)
 
     agent = create_react_agent(
         _llm,
@@ -37,7 +37,7 @@ async def weather_agent_node(state: TravelState) -> dict:
         })
         forecast: WeatherForecastResponse = result["structured_response"]
         status = "succeeded" if forecast.daily_forecast else "empty"
-        logger.info("WeatherAgent done — %s", forecast.summary[:80])
+        logger.info("WeatherAgent done â€” %s", forecast.summary[:80])
         return {
             "weather_forecast": forecast,
             "workflow_statuses": set_status(state, "weather", status),
@@ -51,7 +51,7 @@ async def weather_agent_node(state: TravelState) -> dict:
                 daily_forecast=[],
                 trip_risks=[],
                 requires_replanning=False,
-                supervisor_note=f"Weather fetch failed for {destination} — planner should proceed with general knowledge.",
+                supervisor_note=f"Weather fetch failed for {destination} â€” planner should proceed with general knowledge.",
             ),
             "workflow_statuses": set_status(state, "weather", "failed"),
         }

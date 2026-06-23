@@ -32,6 +32,6 @@ class WeatherForecastResponse(BaseModel):
         description=(
             "One sentence addressed to the supervisor. State what you found and flag "
             "any concern the planner should act on before building the itinerary. "
-            "Example: '3 of 5 days show heavy rain — recommend alerting the user before planning outdoor activities.'"
+            "Example: '3 of 5 days show heavy rain â€” recommend alerting the user before planning outdoor activities.'"
         ),
     )

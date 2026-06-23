@@ -9,8 +9,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ai.schemas import TravelAgentStructuredResponse
+from ai.schemas.hotel import HotelChoiceResponse, HotelOption
 from ai.schemas.transport import TransportChoiceResponse, TransportOption
-from trips.models import Trip, TripTransportOption
+from trips.models import Trip, TripHotelOption, TripTransportOption
 from trips.schemas import TripCreate
 
 
@@ -59,6 +60,31 @@ async def create_trip(
         await session.flush()
     await session.refresh(trip)
     return trip
+
+
+async def _attach_selected_hotel_options(session: AsyncSession, trips: list[Trip]) -> None:
+    trip_ids = [trip.id for trip in trips]
+    if not trip_ids:
+        return
+
+    result = await session.execute(
+        select(TripHotelOption)
+        .where(
+            TripHotelOption.trip_id.in_(trip_ids),
+            TripHotelOption.status == "selected",
+        )
+        .order_by(TripHotelOption.created_at.desc())
+    )
+    rows_by_trip: dict[UUID, list[dict]] = {}
+    for option in result.scalars().all():
+        if option.trip_id is None:
+            continue
+        rows_by_trip.setdefault(option.trip_id, []).append(option.to_hotel_option())
+
+    for trip in trips:
+        selected = rows_by_trip.get(trip.id)
+        if selected:
+            trip.hotel_options = selected
 
 
 def _apply_trip_data(trip: Trip, trip_data: TripCreate) -> None:
@@ -116,7 +142,9 @@ async def list_trips(
         .limit(limit)
         .offset(offset)
     )
-    return list(result.scalars().all())
+    trips = list(result.scalars().all())
+    await _attach_selected_hotel_options(session, trips)
+    return trips
 
 
 async def get_trip(session: AsyncSession, user_id: str | UUID, trip_id: str | UUID) -> Trip | None:
@@ -126,7 +154,10 @@ async def get_trip(session: AsyncSession, user_id: str | UUID, trip_id: str | UU
             Trip.user_id == UUID(str(user_id)),
         )
     )
-    return result.scalars().first()
+    trip = result.scalars().first()
+    if trip is not None:
+        await _attach_selected_hotel_options(session, [trip])
+    return trip
 
 
 async def update_trip_status(
@@ -196,6 +227,57 @@ async def create_draft_trip(
                 days=transport_choice.days,
                 travelers=transport_choice.travelers,
                 summary=f"Trip to {transport_choice.destination}",
+            ),
+        )
+    )
+    await session.execute(stmt)
+    if commit:
+        await session.commit()
+
+    result = await session.execute(
+        select(Trip).where(
+            Trip.user_id == UUID(str(user_id)),
+            Trip.session_id == session_id,
+            Trip.status == "draft",
+        )
+    )
+    return result.scalars().first()
+
+
+async def create_draft_trip_from_hotel(
+    session: AsyncSession,
+    user_id: str | UUID,
+    session_id: str,
+    hotel_choice: HotelChoiceResponse,
+    commit: bool = True,
+) -> Trip:
+    """Create a draft trip when hotel choice is the first persisted HITL step."""
+    stmt = (
+        pg_insert(Trip)
+        .values(
+            id=_uuid.uuid4(),
+            user_id=UUID(str(user_id)),
+            session_id=session_id,
+            destination=hotel_choice.destination,
+            origin=None,
+            start_date=hotel_choice.checkin,
+            end_date=hotel_choice.checkout,
+            days=hotel_choice.nights,
+            travelers=hotel_choice.travelers,
+            status="draft",
+            summary=f"Trip to {hotel_choice.destination}",
+            budget={"flights": 0, "stay": 0, "activities": 0, "food": 0, "total": 0, "currency": "₹"},
+        )
+        .on_conflict_do_update(
+            index_elements=["user_id", "session_id"],
+            index_where=Trip.status == "draft",
+            set_=dict(
+                destination=hotel_choice.destination,
+                start_date=hotel_choice.checkin,
+                end_date=hotel_choice.checkout,
+                days=hotel_choice.nights,
+                travelers=hotel_choice.travelers,
+                summary=f"Trip to {hotel_choice.destination}",
             ),
         )
     )
@@ -296,6 +378,51 @@ async def save_transport_options(
         await session.commit()
 
 
+async def save_hotel_options(
+    session: AsyncSession,
+    session_id: str,
+    trip_id: UUID,
+    hotel_choice: HotelChoiceResponse,
+    commit: bool = True,
+) -> None:
+    rows = [
+        {
+            "session_id": session_id,
+            "trip_id": trip_id,
+            "option_id": opt.id,
+            "destination": hotel_choice.destination,
+            "checkin": hotel_choice.checkin,
+            "checkout": hotel_choice.checkout,
+            "nights": hotel_choice.nights,
+            "travelers": hotel_choice.travelers,
+            "name": opt.name,
+            "provider": opt.provider,
+            "area": opt.area,
+            "hotel_type": opt.hotel_type,
+            "price_per_night": opt.price_per_night,
+            "total_price": opt.total_price,
+            "rating": opt.rating,
+            "amenities": opt.amenities,
+            "distance_from_center_km": opt.distance_from_center_km,
+            "available_rooms": opt.available_rooms,
+            "refundable": opt.refundable,
+            "breakfast_included": opt.breakfast_included,
+            "status": "available",
+            "is_recommended": opt.id == hotel_choice.recommended_id,
+        }
+        for opt in hotel_choice.options
+    ]
+    if not rows:
+        return
+
+    stmt = pg_insert(TripHotelOption).values(rows).on_conflict_do_nothing(
+        constraint="uq_trip_hotel_session_search_option"
+    )
+    await session.execute(stmt)
+    if commit:
+        await session.commit()
+
+
 async def link_transport_options_to_trip(
     session: AsyncSession,
     trip_id: UUID,
@@ -354,6 +481,65 @@ async def link_transport_options_to_trip(
         await session.commit()
 
 
+async def link_hotel_options_to_trip(
+    session: AsyncSession,
+    trip_id: UUID,
+    selected_option: HotelOption | None,
+    was_skipped: bool = False,
+    commit: bool = True,
+) -> None:
+    count_row = await session.execute(
+        select(func.count()).select_from(TripHotelOption)
+        .where(TripHotelOption.trip_id == trip_id)
+    )
+    has_saved_options = (count_row.scalar() or 0) > 0
+
+    if not has_saved_options:
+        if selected_option is not None:
+            hotel_status = "selected"
+        elif was_skipped:
+            hotel_status = "skipped"
+        else:
+            return
+        await session.execute(
+            update(Trip).where(Trip.id == trip_id).values(hotel_status=hotel_status)
+        )
+        if commit:
+            await session.commit()
+        return
+
+    selected_id = selected_option.id if selected_option is not None else None
+
+    if not selected_id:
+        await session.execute(
+            update(TripHotelOption)
+            .where(TripHotelOption.trip_id == trip_id)
+            .values(status="skipped")
+        )
+        hotel_status = "skipped"
+    else:
+        await session.execute(
+            update(TripHotelOption)
+            .where(TripHotelOption.trip_id == trip_id)
+            .values(status="available")
+        )
+        await session.execute(
+            update(TripHotelOption)
+            .where(
+                TripHotelOption.trip_id == trip_id,
+                TripHotelOption.option_id == selected_id,
+            )
+            .values(status="selected")
+        )
+        hotel_status = "selected"
+
+    await session.execute(
+        update(Trip).where(Trip.id == trip_id).values(hotel_status=hotel_status)
+    )
+    if commit:
+        await session.commit()
+
+
 async def expire_session_transport_options(session: AsyncSession, session_id: str) -> None:
     """Mark all still-available options for a session as expired.
 
@@ -382,6 +568,18 @@ async def get_trip_transport_options(
     return list(result.scalars().all())
 
 
+async def get_trip_hotel_options(
+    session: AsyncSession,
+    trip_id: UUID,
+) -> list[TripHotelOption]:
+    result = await session.execute(
+        select(TripHotelOption)
+        .where(TripHotelOption.trip_id == trip_id)
+        .order_by(TripHotelOption.status.desc(), TripHotelOption.price_per_night, TripHotelOption.rating.desc())
+    )
+    return list(result.scalars().all())
+
+
 async def get_session_transport_options(
     session: AsyncSession,
     session_id: str,
@@ -397,6 +595,24 @@ async def get_session_transport_options(
             Trip.user_id == UUID(str(user_id)),
         )
         .order_by(TripTransportOption.leg, TripTransportOption.mode, TripTransportOption.price)
+    )
+    return list(result.scalars().all())
+
+
+async def get_session_hotel_options(
+    session: AsyncSession,
+    session_id: str,
+    user_id: str | UUID,
+) -> list[TripHotelOption]:
+    result = await session.execute(
+        select(TripHotelOption)
+        .join(Trip, TripHotelOption.trip_id == Trip.id)
+        .where(
+            TripHotelOption.session_id == session_id,
+            TripHotelOption.status == "available",
+            Trip.user_id == UUID(str(user_id)),
+        )
+        .order_by(TripHotelOption.price_per_night, TripHotelOption.rating.desc())
     )
     return list(result.scalars().all())
 
